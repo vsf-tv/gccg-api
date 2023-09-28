@@ -42,7 +42,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ## Values that are valid for both source and destination connections. ##
   "profile_version": "01.00", ## Version of this JSON ##
   "protocol": "cdi",          ## TODO Other types: "rtp", "tcp", "ndi", "srt", "socket", "other". Platform specific? ##
-  "bandwidth": "14000000",    ## Maximum required bandwidth for the connection. ##
+  "bandwidth": 14000000,      ## Maximum required bandwidth for the connection. ##
+
+  "timing": {         ## Note: These values should not change over the lifetime of the connection.
+    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier ##
+    "COT": 1234,      ## Content Origination Timestamp ##
+    "LAT": 1234,      ## Local Arrival Timestamp ##
+    "Tmin": 100,      ## Minimum latency of the Workflow Step ##
+    "T99": 200        ## Maximum latency of the Workflow Step ##
+  },
 
   ## Destination is only valid for Tx connections. ##
   ## Depending on protocol, one or more destination IP, port and bind addresses. ##
@@ -81,25 +89,98 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           "TCS": "SDR",
           "RANGE": "NARROW",
           "PAR": "12:13",
-          "alpha_included":false
-        }
+          "alphaIncluded": false,
+          "partialFrame": {
+            "width": 32,
+            "height": 32,
+            "hOffset": 132,
+            "vOffset": 132
+          },
+        },
       },
     },
     {
       "type": "audio",
-      "encodingName": "pcm",
+      "encodingName": "pcm", ## Options are: "st2110-31" or "pcm" ##
       "attributes": {
-          "channelOrder": "SMPTE2110.(SGRP)",
-          "language": "EN"
+          "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
+          "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
+          "channelOrder": "SMPTE2110.(SGRP)", ## Channel order string. ##
+          "language": "EN",       ## Language code. ##
+          "samplingRate": 48,     ## Sampling rate in Khz. Fixed for lifetime of connection. ##
+          "OriginalBitDepth": 24, ## Original bit depth of the samples. ##
+          "sampleCount": 100      ## Number of samples included in each channel. ##
         },
     },
     {
       "type": "ancillary-data",
-      "encodingName": "smpte291"
+      "encodingName": "rfc8331",
+      "PacketCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted
+                                ## in a given period, the header shall still be sent in a timely manner indicating a
+                                ## count of zero. ##
+      "interlace": false,       ## Type of video, interlaced or progressive. ##
+      "evenField": true,        ## If interlaced even or odd field. ##
+      "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
+      "lineNumber": 10,         ## Line number of the ANC data. ##
+      "hOffset": 0,             ## Horizontal offset of the ANC data. ##
+      "sourceStreamNumber", 0,  ## Source data stream number information. ##
+      "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
+      "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
+      "dataWordCount": 10       ## Number of data words for each ANC packet. ##
     }
   ]
 }
 **/
+
+/**
+ * Video data is stored in pgroup format as defined in ST2110-20. An example of a 5 Octet 4:2:2 10-bit pgroup is
+ * shown below:
+ *  0                   1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ * |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+
+/**
+ * 32-bit PCM audio data is stored in the following format:
+ *             +-----------------------+------------+------------+------------------------+
+ * 1 sample:   | most significant byte |   byte 2   |   byte 1   | least significant byte |
+ *             +-----------------------+------------+------------+------------------------+
+ *
+ * Audio samples with multiple channels are interleaved. An example using 4 channels is shown below:
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample 0 channel 0 | sample 0 channel 1 | sample 0 channel 2 | sample 0 channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample 1 channel 0 | sample 1 channel 1 | sample 1 channel 2 | sample 1 channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *                                           ...
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample N channel 0 | sample N channel 1 | sample N channel 2 | sample N channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ **/
+
+/**
+ * Ancillary packet data is based on the packing model of RFC 8331.
+ * 
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |           ANC_Count           | F |         reserved          |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * The section below is repeated once for each ancillary data packet, as specified by ANC_Count.
+ *
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |C|   Line_Number       |   Horizontal_Offset   |S|  StreamNum  |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |         DID       |        SDID       |   Data_Count      |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *                           User_Data_Words...
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *                                  |   Checksum_Word   |word_align |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ **/
 
 /**
  * payload_json_ptr : A JSON string used for informational purposes when transmitting and receiving payloads. When
@@ -115,29 +196,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ## Array of media, containing one or more of the following media types: ##
   "media": [
     {
-      "type": "video",
-      "attributes": {
-        "fmtp": {
-          "sampling": "YCbCr-4:2:2",
-          "width": 1920,
-          "height": 1080,
-          "exactframerate": "60000/1001",
-          "colorimetry": "BT709",         ## Configurable ##
-          "interlace": false,
-          "segmented": false,
-          "TCS": "SDR",                   ## Configurable ##
-          "RANGE": "NARROW",              ## Configurable ##
-          "PAR": "12:13",
-          "alpha_included":false
-        }
-      },
-    },
-    {
-      "type": "audio",
-      "attributes": {
-        "channelOrder": "SMPTE2110.(SGRP)", ## Configurable ##
-        "language": "EN"                    ## Configurable ##
-      }
+      [same as connection's media array]
     }
   ]
 }
