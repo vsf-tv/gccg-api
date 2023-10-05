@@ -40,9 +40,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * The JSON shown below is an example of a connection JSON string.
 {
   ## Values that are valid for both source and destination connections. ##
-  "profile_version": "01.00", ## Version of this JSON ##
+  "profileVersion": "01.00",  ## Version of this JSON ##
   "protocol": "cdi",          ## TODO Other types: "rtp", "tcp", "ndi", "srt", "socket", "other". Platform specific? ##
-  "bandwidth": "14000000",    ## Maximum required bandwidth for the connection. ##
+  "bandwidth": 14000000,      ## Maximum required bandwidth for the connection. ##
+
+  "timing": {         ## Note: These values should not change over the lifetime of the connection. ##
+    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier ##
+    "COT": 12345678,  ## 64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE
+                      ## Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds. ##
+    "LAT": 12345678,  ## 64-bit Local Arrival Timestamp in same format as COT. ##
+    "tMin": 100,      ## Minimum latency of the Workflow Step in milliseconds. ##
+    "t99": 200        ## Maximum latency of the Workflow Step in milliseconds. ##
+  },
 
   ## Destination is only valid for Tx connections. ##
   ## Depending on protocol, one or more destination IP, port and bind addresses. ##
@@ -66,8 +75,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   "media": [
     {
       "type": "video",
-      "level": "1080p60"    ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
-      "encodingName": "raw",
+      "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
+      "encodingName": "raw", ## raw (uncompressed), jxs (JPEG XS compressed), etc.
       "attributes": {
         "fmtp": {
           "sampling": "YCbCr-4:2:2",
@@ -76,30 +85,106 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           "height": 1080,
           "exactframerate": "60000/1001",
           "colorimetry": "BT709",
-          "interlace": false,
+          "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
+          "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
           "segmented": false,
           "TCS": "SDR",
           "RANGE": "NARROW",
           "PAR": "12:13",
-          "alpha_included":false
-        }
+          "alphaIncluded": false,
+          "partialFrame": {
+            "width": 32,
+            "height": 32,
+            "hOffset": 132,
+            "vOffset": 132
+          },
+        },
       },
     },
     {
       "type": "audio",
-      "encodingName": "pcm",
+      "encodingName": "pcm", ## Options are: "st2110-31" or "pcm" ##
       "attributes": {
-          "channelOrder": "SMPTE2110.(SGRP)",
-          "language": "EN"
+          "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
+          "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
+          "channelOrder": "SMPTE2110.(SGRP)", ## Channel order string. ##
+          "language": "EN",       ## Language code. ##
+          "samplingRate": 48,     ## Sampling rate in Khz. Fixed for lifetime of connection. ##
+          "originalBitDepth": 24, ## Original bit depth of the samples. ##
+          "sampleCount": 100      ## Number of samples included in each channel. ##
         },
     },
     {
       "type": "ancillary-data",
-      "encodingName": "smpte291"
+      "encodingName": "rfc8331",
+      "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted
+                                ## in a given period, the header shall still be sent in a timely manner indicating a
+                                ## count of zero. ##
+      "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
+      "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
+      "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
+      "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location is not
+                                ## required, users are encouraged to use the location-free indicators specified in RFC8331). ##
+      "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
+      "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
+      "dataWordCount": 10       ## Number of data words for each ANC packet. ##
+      ## Note the horizontal offset and stream number, which are present in the RFC, are not used here. ##
     }
   ]
 }
 **/
+
+/**
+ * Raw (uncompressed) video data is stored in pgroup format as defined in ST2110-20. Note: For interlaced video
+ * the fields shall be transmitted in time order, first field first. An example of a 5 Octet 4:2:2 10-bit pgroup
+ * is shown below:
+ *
+ *  0                   1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ * |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+
+/**
+ * 32-bit PCM audio data is stored in the following format:
+ *             +-----------------------+------------+------------+------------------------+
+ * 1 sample:   | most significant byte |   byte 2   |   byte 1   | least significant byte |
+ *             +-----------------------+------------+------------+------------------------+
+ *
+ * Audio samples with multiple channels are interleaved. An example using 4 channels is shown below:
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample 0 channel 0 | sample 0 channel 1 | sample 0 channel 2 | sample 0 channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample 1 channel 0 | sample 1 channel 1 | sample 1 channel 2 | sample 1 channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *                                           ...
+ *  +--------------------+--------------------+--------------------+--------------------+
+ *  | sample N channel 0 | sample N channel 1 | sample N channel 2 | sample N channel 3 |
+ *  +--------------------+--------------------+--------------------+--------------------+
+ **/
+
+/**
+ * Ancillary packet data is based on the packing model of RFC 8331.
+ * 
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |           ANC_Count           | F |         reserved          |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *
+ * The section below is repeated once for each ancillary data packet, as specified by ANC_Count.
+ *
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |C|   Line_Number       |   Horizontal_Offset   |S|  StreamNum  |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |         DID       |        SDID       |   Data_Count      |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *                           User_Data_Words...
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *                                  |   Checksum_Word   |word_align |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ **/
 
 /**
  * payload_json_ptr : A JSON string used for informational purposes when transmitting and receiving payloads. When
@@ -108,38 +193,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * The JSON shown below is an example of a payload JSON string.
 {
-  "profile_version": "01.00", ## Version of this JSON ##
-  "protocol": "cdi",          ## "socket", "tcp", "other". Platform specific? ##
-  "bandwidth": "14000000",    ## Maximum required bandwidth for the connection. ##
-
-  ## Array of media, containing one or more of the following media types: ##
-  "media": [
-    {
-      "type": "video",
-      "attributes": {
-        "fmtp": {
-          "sampling": "YCbCr-4:2:2",
-          "width": 1920,
-          "height": 1080,
-          "exactframerate": "60000/1001",
-          "colorimetry": "BT709",         ## Configurable ##
-          "interlace": false,
-          "segmented": false,
-          "TCS": "SDR",                   ## Configurable ##
-          "RANGE": "NARROW",              ## Configurable ##
-          "PAR": "12:13",
-          "alpha_included":false
-        }
-      },
-    },
-    {
-      "type": "audio",
-      "attributes": {
-        "channelOrder": "SMPTE2110.(SGRP)", ## Configurable ##
-        "language": "EN"                    ## Configurable ##
-      }
-    }
-  ]
+  "profileVersion": "01.00",  ## Version of this JSON ##
+  "timing" : []               ## Same as the connection's timing array. ##
+  "media": []                 ## Same as connection's media array. ##
 }
 **/
 
