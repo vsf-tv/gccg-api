@@ -41,70 +41,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 {
   ## Values that are valid for both source and destination connections. ##
   "profileVersion": "01.00",  ## Version of this JSON ##
-  "protocol": "cdi",          ## TODO Other types: "rtp", "tcp", "ndi", "srt", "socket", "other". Platform specific? ##
-  "bandwidth": 14000000,      ## Maximum required bandwidth for the connection. ##
 
-  "timing": {         ## Note: These values should not change over the lifetime of the connection. ##
-    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier ##
+  "timing": {         ## Note: These values must not change over the lifetime of the connection except as noted below. ##
+    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier. ##
     "COT": 12345678,  ## 64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE
                       ## Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds. ##
     "LAT": 12345678,  ## 64-bit Local Arrival Timestamp in same format as COT. ##
-    "tMin": 100,      ## Minimum latency of the Workflow Step in milliseconds. ##
-    "t99": 200        ## Maximum latency of the Workflow Step in milliseconds. ##
+    "tMin": 100,      ## Minimum latency of the Workflow Step in milliseconds. Can change but the change is disruptive to ##
+                      ## the Workflow timing while the Workflow adapts. ##
+    "t99": 200        ## Maximum latency of the Workflow Step in milliseconds. Can change but the change is disruptive to ##
+                      ## the Workflow timing while the Workflow adapts. ##
   },
 
-  ## Destination is only valid for Tx connections. ##
-  ## Depending on protocol, one or more destination IP, port and bind addresses. ##
-  "destination": [
-    {
-      "ip": "127.0.0.1",          ## Destination IP address to send to ###
-      "port": 3000,               ## Port to send to ##
-      "bindAddress": "127.0.0.1"  ## Local interface to use ##
-      ## TODO Other values needed for specific protocol types ##
-    }
-  ]
-
-  ## Source is only valid for Rx connections. ##
-  "source": {
-      "port": 3000          ## Source port to listen to ##
-      "filter": "127.x.x.x" ## Optional source filter ##
-      ## TODO Other values needed for specific protocol types ##
-  }
-
-  ## Array of media, containing one or more of the following media types: ##
-  "media": [
-    {
-      "type": "video",
-      "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
-      "encodingName": "raw", ## raw (uncompressed), jxs (JPEG XS compressed), etc.
-      "attributes": {
-        "fmtp": {
-          "sampling": "YCbCr-4:2:2",
-          "depth": 10,
-          "width": 1920,
-          "height": 1080,
-          "exactframerate": "60000/1001",
-          "colorimetry": "BT709",
-          "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
-          "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
-          "segmented": false,
-          "TCS": "SDR",
-          "RANGE": "NARROW",
-          "PAR": "12:13",
-          "alphaIncluded": false,
-          "partialFrame": {
-            "width": 32,
-            "height": 32,
-            "hOffset": 132,
-            "vOffset": 132
+  ## A Media Flow containing one or more Media Elements that belong to the same media essence/stream. ##
+  "mediaFlow": {
+    "flowIdentifier": 12345678, ## Identifier used to associate this media with a flow. ##
+    ## Array of Media Elements, containing one or more of the following media types: ##
+    "mediaElement": [
+      {
+        "type": "video",
+        "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
+        "encodingName": "raw", ## Video options are from the IANA registered video media types. ##
+                                ## See https://www.iana.org/assignments/media-types/media-types.xhtml#video ##
+        "elementIdentifier": 12345670, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
+        "attributes": {
+          "fmtp": {
+            "sampling": "YCbCr-4:2:2",
+            "depth": 10,
+            "width": 1920,
+            "height": 1080,
+            "exactframerate": "60000/1001",
+            "colorimetry": "BT709",
+            "interlace": false, ## Type of video. true= interlaced, false= progressive. ##
+            "evenField": true,  ## If interlace, defines field. true= even field, false= odd field. ##
+            "segmented": false,
+            "TCS": "SDR",
+            "RANGE": "NARROW",
+            "PAR": "12:13",
+            "alphaIncluded": false,
+            "partialFrame": {
+              "width": 32,
+              "height": 32,
+              "hOffset": 132,
+              "vOffset": 132
+            },
           },
         },
       },
-    },
-    {
-      "type": "audio",
-      "encodingName": "pcm", ## Options are: "st2110-31" or "pcm" ##
-      "attributes": {
+      {
+        "type": "audio",
+        "encodingName": "pcm",      ## Audio options are: "st2110-31" or "pcm" ##
+        "elementIdentifier": 12345671, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
+        "attributes": {
           "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
           "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
           "channelOrder": "SMPTE2110.(SGRP)", ## Channel order string. ##
@@ -112,25 +100,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
           "samplingRate": 48,     ## Sampling rate in Khz. Fixed for lifetime of connection. ##
           "originalBitDepth": 24, ## Original bit depth of the samples. ##
           "sampleCount": 100      ## Number of samples included in each channel. ##
+          },
         },
-    },
-    {
-      "type": "ancillary-data",
-      "encodingName": "rfc8331",
-      "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted
-                                ## in a given period, the header shall still be sent in a timely manner indicating a
-                                ## count of zero. ##
-      "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
-      "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
-      "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
-      "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location is not
-                                ## required, users are encouraged to use the location-free indicators specified in RFC8331). ##
-      "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
-      "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
-      "dataWordCount": 10       ## Number of data words for each ANC packet. ##
-      ## Note the horizontal offset and stream number, which are present in the RFC, are not used here. ##
+        {
+          "type": "ancillary-data",
+          "encodingName": "rfc8331",## The only ancillary-data option is "rfc8331". ##
+          "elementIdentifier": 12345672, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
+          "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted
+                                      ## in a given period, the header shall still be sent in a timely manner indicating a
+                                      ## count of zero. ##
+          "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
+          "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
+          "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
+          "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location is not
+                                      ## required, users are encouraged to use the location-free indicators specified in RFC8331). ##
+          "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
+          "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
+          "dataWordCount": 10       ## Number of data words for each ANC packet. ##
+          ## Note the horizontal offset and stream number, which are present in the RFC, are not used here. ##
+        }
+      ]
     }
-  ]
+  }
 }
 **/
 
@@ -144,10 +135,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
  * |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * 
+ * The value "raw" must be used for the JSON configuration "encodingName" element as shown below:
+ *
+ * "encodingName": "raw"
  */
 
 /**
- * 32-bit PCM audio data is stored in the following format:
+ * Compressed video data formats shall be indentified by using the Internet Assigned Numbers Authority (IANA) video
+ * name strings, which can be found at https://www.iana.org/assignments/media-types/media-types.xhtml#video, for the
+ * JSON configuration "encodingName" element.
+ * 
+ * An example for H.264 compressed video is shown below:
+ *
+ * "encodingName": "H264"
+ */
+
+/**
+ * 32-bit PCM (uncompressed) audio data is stored in the following format:
  *             +-----------------------+------------+------------+------------------------+
  * 1 sample:   | most significant byte |   byte 2   |   byte 1   | least significant byte |
  *             +-----------------------+------------+------------+------------------------+
@@ -220,15 +225,13 @@ typedef enum {
     kGccgStatusError             = 3
 } GccgReturnStatus;
 
-/// @brief A structure for holding a PTP timestamp defined in seconds and nanoseconds. This PTP time as defined by
-/// SMPTE ST 2059-2 and IEEE 1588-2008 with the exception that the seconds field is an unsigned 32 bit integer instead
-/// of the specified 48 bit integer.
-typedef struct GccgPtpTimestamp {
+/// @brief A structure for holding a timestamp defined in seconds and nanoseconds.
+typedef struct GccgTimestamp {
     /// The number of seconds since the SMPTE Epoch which is 1970-01-01T00:00:00.
     uint32_t seconds;
     /// The number of fractional seconds as measured in nanoseconds. The value in this field is always less than 10^9.
     uint32_t nanoseconds;
-} GccgPtpTimestamp;
+} GccgTimestamp;
 
 typedef struct GccgSglEntry GccgSglEntry;
 /**
@@ -254,10 +257,8 @@ struct GccgSglEntry {
  * or more contiguous regions of memory.
  */
 typedef struct {
-    /// @brief Origination timestamp to associate with the SGL. This timestamp is a PTP timestamp as outlined
-    /// by SMPTE ST 2059-2. The one exception is the seconds field is stored as an unsigned 32 bit integer instead of
-    /// the specified unsigned 48 bit integer.
-    GccgPtpTimestamp origination_ptp_timestamp;
+    /// @brief Origination timestamp to associate with the SGL.
+    GccgTimestamp origination_timestamp;
 
     /// @brief Total size of data in the list, in units of bytes. This value can be calculated by walking the sgl_array,
     /// but is provided here for convenience and efficiency. NOTE: This value must be the same as the value calculated
@@ -275,16 +276,20 @@ typedef struct {
 } GccgSgList;
 
 /**
- * @brief Type used to define the size and location of a media element.
+ * @brief Type used to define a list of media elements. When transmitting media, this list is used as a parameter passed
+ * to the GccgTxPayload() API that defines the media elements to transmit. When receiving media, this list defines the
+ * media elements received as part of the GccgRxCallback() callback API. It is also used by the GccgRxFreeBuffer() API
+ * when the application is done with received media elements to free their associated resources.
  */
 typedef struct {
     /// @brief Number of media elements in media_array.
+    ///
     /// Note: This value must match the number of media elements configured when the connection was created using one
     /// of the ...ConnectionCreate() API functions and cannot change. If a payload does not contain one or more media
-    /// elements, than the respective pointer(s) in sql_array must be NULL.
+    /// elements, than the respective pointer(s) in sgl_array must be NULL.
     int count;
 
-    GccgSgList* sgl_array; ///< Pointer to start of the media element SGL array.
+    GccgSgList** sgl_array; ///< Pointer to start of the array of media element SGL pointers.
 } GccgMediaElements;
 
 /**
@@ -321,7 +326,8 @@ typedef void (*GccgTxCallback)(const GccgTxCbData* data_ptr);
 
 /**
  * @brief A structure of this type is passed as the parameter to GccgRxCallback(). It contains a single payload sent
- * from a transmitter and data related to the Rx connection.
+ * from a transmitter and data related to the Rx connection. Once the application has completed use of the buffer, it
+ * must be freed using the GccgRxFreeBuffer() API.
  */
 typedef struct {
     GccgReturnStatus status_code;
@@ -434,9 +440,10 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
                                               int timeout_microsecs);
 
 /**
- * Free the receive buffer that was used by the GccgRxCallback() callback function.
+ * Free an array of receive buffers that was used by the GccgRxCallback() callback function.
  *
- * @param media_array
+ * @param media_array Pointer to a structure that contains an array of media elements to free and the number of elements
+ *                    in the array.
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
