@@ -1,27 +1,8 @@
-/*
-
-BSD-2-Clause
-
-Copyright Amazon.com Inc. or its affiliates
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
-disclaimer in the documentation and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-*/
+// -------------------------------------------------------------------------------------------
+// Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
+// This file is part of the AWS CDI-SDK, licensed under the BSD 2-Clause "Simplified" License.
+// License details at: https://github.com/vsf-tv/gccg-api/blob/mainline/LICENSE
+// -------------------------------------------------------------------------------------------
 
 #ifndef GCCG_TRANSPORT_API_H__
 #define GCCG_TRANSPORT_API_H__
@@ -32,177 +13,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * This file declares the public API data types, structures and functions that comprise the GCCG transport API. Each
  * connection is considered a single flow that may contain one or more media elements (video, audio and ancillary data).
  **/
-
-/**
- * connection_json_ptr : A JSON string used to configure a connection. It is used by the GccgTxConnectionCreate() and
- * GccgRxConnectionCreate() API functions.
- *
- * The JSON shown below is an example of a connection JSON string.
-{
-  ## Values that are valid for both source and destination connections. ##
-  "profileVersion": "01.00",  ## Version of this JSON ##
-
-  "timing": {         ## Note: These values must not change over the lifetime of the connection except as noted below. ##
-    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier. ##
-    "COT": 12345678,  ## 64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE
-                      ## Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds. ##
-    "LAT": 12345678,  ## 64-bit Local Arrival Timestamp in same format as COT. ##
-    "tMin": 100,      ## Minimum latency of the Workflow Step in milliseconds. Can change but the change is disruptive to ##
-                      ## the Workflow timing while the Workflow adapts. ##
-    "t99": 200        ## Maximum latency of the Workflow Step in milliseconds. Can change but the change is disruptive to ##
-                      ## the Workflow timing while the Workflow adapts. ##
-  },
-
-  ## A Media Flow containing one or more Media Elements that belong to the same media essence/stream. ##
-  "mediaFlow": {
-    "flowIdentifier": 12345678, ## Identifier used to associate this media with a flow. ##
-    ## Array of Media Elements, containing one or more of the following media types: ##
-    "mediaElement": [
-      {
-        "type": "video",
-        "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
-        "encodingName": "raw", ## Video options are from the IANA registered video media types. ##
-                                ## See https://www.iana.org/assignments/media-types/media-types.xhtml#video ##
-        "elementIdentifier": 12345670, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
-        "attributes": {
-          "fmtp": {
-            "sampling": "YCbCr-4:2:2",
-            "depth": 10,
-            "width": 1920,
-            "height": 1080,
-            "exactframerate": "60000/1001",
-            "colorimetry": "BT709",
-            "interlace": false, ## Type of video. true= interlaced, false= progressive. ##
-            "evenField": true,  ## If interlace, defines field. true= even field, false= odd field. ##
-            "segmented": false,
-            "TCS": "SDR",
-            "RANGE": "NARROW",
-            "PAR": "12:13",
-            "alphaIncluded": false,
-            "partialFrame": {
-              "width": 32,
-              "height": 32,
-              "hOffset": 132,
-              "vOffset": 132
-            },
-          },
-        },
-      },
-      {
-        "type": "audio",
-        "encodingName": "pcm",      ## Audio options are: "st2110-31" or "pcm" ##
-        "elementIdentifier": 12345671, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
-        "attributes": {
-          "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
-          "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
-          "channelOrder": "SMPTE2110.(SGRP)", ## Channel order string. ##
-          "language": "EN",       ## Language code. ##
-          "samplingRate": 48,     ## Sampling rate in Khz. Fixed for lifetime of connection. ##
-          "originalBitDepth": 24, ## Original bit depth of the samples. ##
-          "sampleCount": 100      ## Number of samples included in each channel. ##
-          },
-        },
-        {
-          "type": "ancillary-data",
-          "encodingName": "rfc8331",## The only ancillary-data option is "rfc8331". ##
-          "elementIdentifier": 12345672, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
-          "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted
-                                      ## in a given period, the header shall still be sent in a timely manner indicating a
-                                      ## count of zero. ##
-          "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
-          "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
-          "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
-          "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location is not
-                                      ## required, users are encouraged to use the location-free indicators specified in RFC8331). ##
-          "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
-          "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
-          "dataWordCount": 10       ## Number of data words for each ANC packet. ##
-          ## Note the horizontal offset and stream number, which are present in the RFC, are not used here. ##
-        }
-      ]
-    }
-  }
-}
-**/
-
-/**
- * Raw (uncompressed) video data is stored in pgroup format as defined in ST2110-20. Note: For interlaced video
- * the fields shall be transmitted in time order, first field first. An example of a 5 Octet 4:2:2 10-bit pgroup
- * is shown below:
- *
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
- * |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * 
- * The value "raw" must be used for the JSON configuration "encodingName" element as shown below:
- *
- * "encodingName": "raw"
- */
-
-/**
- * Compressed video data formats shall be indentified by using the Internet Assigned Numbers Authority (IANA) video
- * name strings, which can be found at https://www.iana.org/assignments/media-types/media-types.xhtml#video, for the
- * JSON configuration "encodingName" element.
- * 
- * An example for H.264 compressed video is shown below:
- *
- * "encodingName": "H264"
- */
-
-/**
- * 32-bit PCM (uncompressed) audio data is stored in the following format:
- *             +-----------------------+------------+------------+------------------------+
- * 1 sample:   | most significant byte |   byte 2   |   byte 1   | least significant byte |
- *             +-----------------------+------------+------------+------------------------+
- *
- * Audio samples with multiple channels are interleaved. An example using 4 channels is shown below:
- *  +--------------------+--------------------+--------------------+--------------------+
- *  | sample 0 channel 0 | sample 0 channel 1 | sample 0 channel 2 | sample 0 channel 3 |
- *  +--------------------+--------------------+--------------------+--------------------+
- *  | sample 1 channel 0 | sample 1 channel 1 | sample 1 channel 2 | sample 1 channel 3 |
- *  +--------------------+--------------------+--------------------+--------------------+
- *                                           ...
- *  +--------------------+--------------------+--------------------+--------------------+
- *  | sample N channel 0 | sample N channel 1 | sample N channel 2 | sample N channel 3 |
- *  +--------------------+--------------------+--------------------+--------------------+
- **/
-
-/**
- * Ancillary packet data is based on the packing model of RFC 8331.
- * 
- *   0                   1                   2                   3
- *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |           ANC_Count           | F |         reserved          |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- * The section below is repeated once for each ancillary data packet, as specified by ANC_Count.
- *
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |C|   Line_Number       |   Horizontal_Offset   |S|  StreamNum  |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |         DID       |        SDID       |   Data_Count      |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *                           User_Data_Words...
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *                                  |   Checksum_Word   |word_align |
- *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- **/
-
-/**
- * payload_json_ptr : A JSON string used for informational purposes when transmitting and receiving payloads. When
- * transmitting, it can be use to define configurable changes to a payload as described below. It is used by the
- * GccgTxPayload() API function and the GccgRxCallback() callback function.
- *
- * The JSON shown below is an example of a payload JSON string.
-{
-  "profileVersion": "01.00",  ## Version of this JSON ##
-  "timing" : []               ## Same as the connection's timing array. ##
-  "media": []                 ## Same as connection's media array. ##
-}
-**/
 
 /// Specify C linkage when compiling as C++ and define API interface export for Windows.
 #if defined(_WIN32) && defined(__cplusplus)
@@ -222,7 +32,8 @@ typedef enum {
     kGccgStatusOk                = 0,
     kGccgStatusTimeoutExpired    = 1,
     kGccgStatusInvalidParameter  = 2,
-    kGccgStatusError             = 3
+    kGccgStatusBufferToSmall     = 3,
+    kGccgStatusError             = 4
 } GccgReturnStatus;
 
 /// @brief A structure for holding a timestamp defined in seconds and nanoseconds.
@@ -243,6 +54,9 @@ struct GccgSglEntry {
 
     /// @brief The size of the data in bytes.
     int size_in_bytes;
+
+    /// @brief User defined parameter. This value is not modified by the API.
+    void* user_param_ptr;
 
     /// @brief Handle to private data used within the SDK that relates to this SGL entry. Do not use or modify this
     /// value.
@@ -270,6 +84,9 @@ typedef struct {
 
     /// @brief Pointer to the last entry in the singly-linked list of SGL entries.
     GccgSglEntry* sgl_tail_ptr;
+
+    /// @brief User defined parameter. This value is not modified by the API.
+    void* user_param_ptr;
 
     /// @brief Handle to internal data used within the SDK that relates to this SGL. Do not use or modify this value.
     void* internal_data_ptr;
@@ -319,8 +136,12 @@ typedef struct {
  * provide it to GccgTxConnectionCreate() as a parameter.
  *
  * This callback function is invoked when a complete payload has been transmitted.
+ * 
+ * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() function must be called in order
+ * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
+ * that is different from the thread that was used to create the connection.
  *
- * @param data_ptr A pointer to an GccgTxCbData structure.
+ * @param data_ptr A pointer to a GccgTxCbData structure.
  */
 typedef void (*GccgTxCallback)(const GccgTxCbData* data_ptr);
 
@@ -356,10 +177,26 @@ typedef struct {
  * This callback function is invoked when a complete payload has been received. The application must use the
  * GccgRxFreeBuffer() API function to free the buffer. This can either be done within the user callback function or
  * at a later time whenever the application is done with the buffer.
+ * 
+ * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() function must be called in order
+ * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
+ * that is different from the thread that was used to create the connection.
  *
- * @param data_ptr A pointer to an GccgRxData structure.
+ * @param data_ptr A pointer to a GccgRxData structure.
  */
 typedef void (*GccgRxCallback)(const GccgRxCbData* data_ptr);
+
+/**
+ * @brief Initialize the GCCG transport API. This sets limits on the number of threads and thread priority that the
+ * underlying API can use. If this API is not invoked, thread usage within the underlying API is not restricted.
+ * 
+ * @param maximum_thread_count Maximum number of threads the underlying API can use.
+ * @param maximum_thread_priority Maximum thread priority the underlying API can use. The range is 0 (lowest) to
+ *                                99 (highest).
+ *
+ * @return A value from the GccgReturnStatus enumeration.
+ */
+GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int maximum_thread_priority);
 
 /**
  * Create an instance of a transmitter. When the instance is no longer needed, use the GccgConnectionDestroy()
@@ -373,14 +210,19 @@ typedef void (*GccgRxCallback)(const GccgRxCbData* data_ptr);
  * @param tx_cb_ptr Address of the user function to call whenever a payload has been transmitted.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
  *                          whenever the rx_cb_ptr callback function is invoked.
+ * @param ret_connection_json_buffer_size : Size of ret_connection_json_str buffer.
+ * @param ret_connection_json_str : Pointer where to write returned json string. If size of buffer is not large enough,
+ *                                  then kGccgStatusBufferToSmall will be returned.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific transmitter.
  *
  * @return A value from the GccgReturnStatus enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char *connection_json_str,
+GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_json_str,
                                                        GccgTxCallback tx_cb_ptr,
                                                        void* user_cb_param_ptr,
+                                                       int ret_connection_json_buffer_size,
+                                                       char* ret_connection_json_str,
                                                        GccgConnectionHandle* ret_handle_ptr);
 
 /**
@@ -397,6 +239,9 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char *connection_js
  * @param rx_cb_ptr Address of the user function to call whenever a payload has been received.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCallback data
  *                          whenever the rx_cb_ptr callback function is invoked.
+ * @param ret_connection_json_buffer_size : Size of ret_connection_json_str buffer.
+ * @param ret_connection_json_str : Pointer where to write returned json string. If size of buffer is not large enough,
+ *                                  then kGccgStatusBufferToSmall will be returned.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific receiver.
  *
@@ -406,6 +251,8 @@ GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_js
                                                        bool use_linear_buffer,
                                                        GccgRxCallback rx_cb_ptr,
                                                        void* user_cb_param_ptr,
+                                                       int ret_connection_json_buffer_size,
+                                                       char* ret_connection_json_str,
                                                        GccgConnectionHandle* ret_handle_ptr);
 
 /**
@@ -424,7 +271,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  * transmission timeout occurred.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
- * @param payload_json_ptr Pointer to payload configuration json string.
+ * @param payload_json_str Pointer to payload configuration json string.
  * @param media_array Array of SGL's that define the size and location of each media element to transmit in this
  *                    payload. If a pointer within the array is NULL, then the payload does not contain an element for
  *                    that media.
@@ -435,7 +282,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  * @return A value from the GCCG_INTERFACE enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
-                                              const char *payload_json_ptr,
+                                              const char *payload_json_str,
                                               GccgMediaElements media_array,
                                               int timeout_microsecs);
 
@@ -448,5 +295,15 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
  * @return A value from the GCCG_INTERFACE enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(GccgMediaElements *media_array);
+
+/**
+ * @brief Only required when using a single-threaded, event loop to service the API.
+ * 
+ * @param handle Connection handle returned by one of the create connection functions.
+ * 
+ * @return A value from the GCCG_INTERFACE enumeration.
+ */
+GCCG_INTERFACE GccgReturnStatus GccgEventLoopPoll(GccgConnectionHandle handle);
+
 
 #endif // GCCG_TRANSPORT_API_H__
