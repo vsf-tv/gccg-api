@@ -113,7 +113,7 @@ typedef struct {
  * @brief Type used as the handle (pointer to an opaque structure) for a transmitter or receiver connection. Each handle
  * represents a single data flow.
  */
-typedef struct void* GccgConnectionHandle;
+typedef void* GccgConnectionHandle;
 
 /**
  * @brief A structure of this type is passed as the parameter to CdiAvmTxCallback(). It contains data related to the
@@ -137,7 +137,7 @@ typedef struct {
  *
  * This callback function is invoked when a complete payload has been transmitted.
  * 
- * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() function must be called in order
+ * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
  * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
  * that is different from the thread that was used to create the connection.
  *
@@ -178,7 +178,7 @@ typedef struct {
  * GccgRxFreeBuffer() API function to free the buffer. This can either be done within the user callback function or
  * at a later time whenever the application is done with the buffer.
  * 
- * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() function must be called in order
+ * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
  * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
  * that is different from the thread that was used to create the connection.
  *
@@ -187,12 +187,14 @@ typedef struct {
 typedef void (*GccgRxCallback)(const GccgRxCbData* data_ptr);
 
 /**
- * @brief Initialize the GCCG transport API. This sets limits on the number of threads and thread priority that the
- * underlying API can use. If this API is not invoked, thread usage within the underlying API is not restricted.
+ * @brief Initialize the GCCG transport API. This defines the number of threads and thread priority the underlying
+ * implementation can use. It must be invoked before using any other APIs.
  * 
- * @param maximum_thread_count Maximum number of threads the underlying API can use.
+ * @param maximum_thread_count Maximum number of threads the underlying API can use. If zero is specified, then the
+ *                             GccgEventLoopPoll() API must be invoked as part of the application's single-threaded
+ *                             event loop. Use -1 to not restrict the implementation.
  * @param maximum_thread_priority Maximum thread priority the underlying API can use. The range is 0 (lowest) to
- *                                99 (highest).
+ *                                99 (highest). Use -1 to not restrict the implementation.
  *
  * @return A value from the GccgReturnStatus enumeration.
  */
@@ -231,7 +233,7 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_js
  *
  * @param connection_json_ptr Pointer to connection configuration data in json format.
  *                            Note: The number and ordering of media elements declared in the JSON defines media_count
- *                            and the ordering in media_array when the GccgRxCallback function is invoked.
+ *                            and the ordering in media_array when the GccgRxCallback() callback API function is invoked.
  *                            The remote host must use the same configuration data when calling the
  *                            GccgTxConnectionCreate() API function to create the transmit side of the connection.
  * @param use_linear_buffer If true, received payload data will be stored in a linear buffer. Otherwise, depending on
@@ -276,7 +278,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  *                    payload. If a pointer within the array is NULL, then the payload does not contain an element for
  *                    that media.
  * @param timeout_microsecs Timeout period in microseconds. If the payload is not transmitted within this period,
- *                          transmission is canceled and the GccgTxCallback API function invoked with
+ *                          transmission is canceled and the GccgTxCallback() callback API function invoked with
  *                          kGccgStatusTimeoutExpired returned as the status_code in GccgTxCbData.
  *
  * @return A value from the GCCG_INTERFACE enumeration.
@@ -287,7 +289,7 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
                                               int timeout_microsecs);
 
 /**
- * Free an array of receive buffers that was used by the GccgRxCallback() callback function.
+ * Free an array of receive buffers that was used by the GccgRxCallback() callback API function.
  *
  * @param media_array Pointer to a structure that contains an array of media elements to free and the number of elements
  *                    in the array.
@@ -297,13 +299,13 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
 GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(GccgMediaElements *media_array);
 
 /**
- * @brief Only required when using a single-threaded, event loop to service the API.
+ * @brief Only required when using a single-threaded, event loop to service the API. Must specify a value of zero for
+ *        maximum_thread_count when invoking the GccgInitialize() API function.
  * 
  * @param handle Connection handle returned by one of the create connection functions.
  * 
  * @return A value from the GCCG_INTERFACE enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgEventLoopPoll(GccgConnectionHandle handle);
-
 
 #endif // GCCG_TRANSPORT_API_H__
