@@ -20,6 +20,23 @@ The API consists of public API data types, structures and functions. A "connecti
 
 JSON is used by the API functions in order to pass configuration information.
 
+## Transport Specific Parameters
+
+Each different implementation must register a URN for its specific transport format, used in the “transport” key of the IS-04 sender and receiver declarations. The underlying implementation also defines a transport parameters structure specific to the implementation - this structure is indicated by the transport URN. In order to isolate the application from differing transport formats, the transport parameters structure shall be conveyed as a JSON-formatted object through the API and exposed in the related NMOS IS-05 sender and receiver structures.  It is the responsibility of the implementation provider to register a JSON schema and URN for its transport parameters object format in the AMWA NMOS Parameter Register.
+
+The parameters are carried within the JSON string using the ```connection_json_ptr``` parameter of the  ```GccgTxConnectionCreate()``` and ```GccgRxConnectionCreate()``` API functions. The parent JSON key is ```"transport_parameters"```. A simplified example is shown below:
+
+```
+  "transport_parameters": {
+    ## Transport specific key/value pairs go here. A few are shown below: ##
+    "transport": "urn:x-nmos:transport:rtp",
+    "format": "urn:x-nmos:format:video",
+    ...
+    ## Additional key/values pairs ##
+    ...
+  }
+```
+
 ## Create Connection APIs
 
 The ```GccgTxConnectionCreate()``` and ```GccgRxConnectionCreate()``` API functions are used to create transmit and receive connections. JSON is used to pass parameters to the API and return information that is specific to the connection.
@@ -32,7 +49,7 @@ This parameter points to a JSON string that use used to configure a new connecti
 {
   "profileVersion": "01.00",  ## Version of this JSON ##
   "timing": {         ## Note: These values must not change over the lifetime of the connection except as noted below. ##
-    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier. ##
+    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier. For non-2110 based environments, use best fit (ie. mac address). ##
     "COT": 12345678,  ## 64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE ##
                       ## Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds. ##
     "LAT": 12345678,  ## 64-bit Local Arrival Timestamp in same format as COT. ##
@@ -42,9 +59,12 @@ This parameter points to a JSON string that use used to configure a new connecti
                             ## Can change but the change is disruptive to the Workflow timing while the Workflow adapts. ##
   },
 
+  "transport_parameters": {
+    ## Transport specific key/value pairs go here ##
+  },
+
   ## A Media Flow containing one or more Media Elements that belong to the same media essence/stream. ##
   "mediaFlow": {
-    "flowIdentifier": 12345678, ## Identifier used to associate this media with a flow. ##
     ## Array of Media Elements, containing one or more of the following media types: ##
     "mediaElement": [
       {
@@ -52,7 +72,6 @@ This parameter points to a JSON string that use used to configure a new connecti
         "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
         "encodingName": "raw", ## Video options are from the IANA registered video media types. ##
                                ## See https://www.iana.org/assignments/media-types/media-types.xhtml#video ##
-        "elementIdentifier": 12345670, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
         "attributes": {
           "fmtp": {
             "sampling": "YCbCr-4:2:2",
@@ -69,10 +88,10 @@ This parameter points to a JSON string that use used to configure a new connecti
             "PAR": "12:13",
             "alphaIncluded": false,
             "partialFrame": {
-              "width": 32,
-              "height": 32,
-              "hOffset": 132,
-              "vOffset": 132
+              "width": 0,
+              "height": 0,
+              "hOffset": 0,
+              "vOffset": 0
             },
           },
         },
@@ -80,7 +99,6 @@ This parameter points to a JSON string that use used to configure a new connecti
       {
         "type": "audio",
         "encodingName": "pcm",      ## Audio options are: "st2110-31" or "pcm" ##
-        "elementIdentifier": 12345671, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
         "attributes": {
           "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
           "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
@@ -94,17 +112,18 @@ This parameter points to a JSON string that use used to configure a new connecti
         {
           "type": "ancillary-data",
           "encodingName": "rfc8331",## The only ancillary-data option is "rfc8331". ##
-          "elementIdentifier": 12345672, ## Identifier used to uniquely identify this Media Element within the Media Flow. ##
           "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted ##
                                     ## in a given period, the header shall still be sent in a timely manner indicating a ##
                                     ## count of zero. ##
           "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
           "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
           "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
-          "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location is not ##
-                                    ## required, users are encouraged to use the location-free indicators specified in RFC8331). ##
-          "DID", 0                  ## Data Identifier Word that indicates the type of ancillary data that the packet corresponds to. ##
-          "SDID", 0,                ## Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
+          "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location ##
+                                    ## is not required, users are encouraged to use the location-free indicators specified ##
+                                    ## in RFC8331). ##
+          "DID", 0                  ## Optional. Data Identifier Word that indicates the type of ancillary data that the ##
+                                    ## packet corresponds to. ##
+          "SDID", 0,                ## Optional. Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
           "dataWordCount": 10       ## Number of data words for each ANC packet. ##
           ## Note: The horizontal offset and stream number, which are present in the RFC, are not used here. ##
         }
@@ -131,9 +150,9 @@ This parameter points to where returned connection data should be written in the
 }
 ```
 
-## Payload APIs
+## Transfer/Receive Payload APIs
 
-The ```GccgRxCallback()``` callback function is invoked when a payload has been received. The ```GccgTxPayload()``` function is used to transmit a payload to a remote receiver.
+The ```GccgRxCallback()``` callback API function is invoked when a payload has been received. The ```GccgTxPayload()``` API function is used to transmit a payload.
 
 ## ```payload_json_str```
 
