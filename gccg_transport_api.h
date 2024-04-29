@@ -1,6 +1,6 @@
 // -------------------------------------------------------------------------------------------
 // Copyright Amazon.com Inc. or its affiliates. All Rights Reserved.
-// This file is part of the AWS CDI-SDK, licensed under the BSD 2-Clause "Simplified" License.
+// This file is part of the VSF GCCG API, licensed under the BSD 2-Clause "Simplified" License.
 // License details at: https://github.com/vsf-tv/gccg-api/blob/mainline/LICENSE
 // -------------------------------------------------------------------------------------------
 
@@ -85,9 +85,6 @@ typedef struct {
     /// @brief Pointer to the last entry in the singly-linked list of SGL entries.
     GccgSglEntry* sgl_tail_ptr;
 
-    /// @brief User defined parameter. This value is not modified by the API.
-    void* user_param_ptr;
-
     /// @brief Handle to internal data used within the SDK that relates to this SGL. Do not use or modify this value.
     void* internal_data_ptr;
 } GccgSgList;
@@ -102,8 +99,8 @@ typedef struct {
     /// @brief Number of media elements in media_array.
     ///
     /// Note: This value must match the number of media elements configured when the connection was created using one
-    /// of the ...ConnectionCreate() API functions and cannot change. If a payload does not contain one or more media
-    /// elements, than the respective pointer(s) in sgl_array must be NULL.
+    /// of the ...ConnectionCreate() API functions and cannot change. However, to allow for dynamic changes, pointers
+    /// in sgl_array may be set to NULL to indicate one or more media elements are not present for a given payload.
     int count;
 
     GccgSgList** sgl_array; ///< Pointer to start of the array of media element SGL pointers.
@@ -116,7 +113,7 @@ typedef struct {
 typedef void* GccgConnectionHandle;
 
 /**
- * @brief A structure of this type is passed as the parameter to CdiAvmTxCallback(). It contains data related to the
+ * @brief A structure of this type is passed as the parameter to GccgTxCallback(). It contains data related to the
  * transmission of a single payload to a receiver and data related to the Tx connection.
  */
 typedef struct {
@@ -126,8 +123,8 @@ typedef struct {
     /// function.
     GccgConnectionHandle connection_handle;
 
-    /// @brief User defined callback parameter. This value is set as a parameter of the GccgTxConnectionCreate()
-    /// API function.
+    /// @brief User defined callback parameter. This value is set as a parameter of the GccgTxPayload() API function. The
+    /// value is not modified by the SDK.
     void* user_cb_param_ptr;
 } GccgTxCbData;
 
@@ -138,8 +135,9 @@ typedef struct {
  * This callback function is invoked when a complete payload has been transmitted.
  * 
  * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
- * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
- * that is different from the thread that was used to create the connection.
+ * for this callback function to be invoked. In a multi-threaded configuration, this function may be invoked on a thread
+ * that is different from the thread that was used to create the connection. The SDK ensures that only one thread will call
+ * this API at a time, so thread-safety does not have to be implemented in the application.
  *
  * @param data_ptr A pointer to a GccgTxCbData structure.
  */
@@ -166,7 +164,7 @@ typedef struct {
     const GccgMediaElements* media_array;
 
     /// @brief User defined callback parameter. This value is set as a parameter of the GccgRxConnectionCreate()
-    /// API function.
+    /// API function. The value is not modified by the SDK.
     void* user_cb_param_ptr;
 } GccgRxCbData;
 
@@ -179,8 +177,9 @@ typedef struct {
  * at a later time whenever the application is done with the buffer.
  * 
  * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
- * for this callback function to be invoked. In a multi-threaded configuration, this function will be invoked on a thread
- * that is different from the thread that was used to create the connection.
+ * for this callback function to be invoked. In a multi-threaded configuration, this function may be invoked on a thread
+ * that is different from the thread that was used to create the connection. The SDK ensures that only one thread will call
+ * this API at a time, so thread-safety does not have to be implemented in the application.
  *
  * @param data_ptr A pointer to a GccgRxData structure.
  */
@@ -188,7 +187,7 @@ typedef void (*GccgRxCallback)(const GccgRxCbData* data_ptr);
 
 /**
  * @brief Initialize the GCCG transport API. This defines the number of threads and thread priority the underlying
- * implementation can use. It must be invoked before using any other APIs.
+ * implementation can use. It must be invoked once before using any other APIs.
  * 
  * @param maximum_thread_count Maximum number of threads the underlying API can use. If zero is specified, then the
  *                             GccgEventLoopPoll() API must be invoked as part of the application's single-threaded
@@ -202,54 +201,60 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
 
 /**
  * Create an instance of a transmitter. When the instance is no longer needed, use the GccgConnectionDestroy()
- * API function to free-up resources that are being used by it.
+ * API function to free-up resources that are being used by it. This API is thread-safe.
  *
  * @param connection_json_ptr Pointer to connection configuration data in json format.
  *                            Note: The number and ordering of media elements declared in the JSON defines media_count
  *                            and the ordering in media_array when using the GccgTxPayload() API function.
  *                            The remote target must use the same configuration data when calling the
  *                            GccgRxConnectionCreate() API function to create the receive side of the connection.
+ * @param tx_buffer_size_bytes The size in bytes of a memory region for holding transmit payload data. A pointer to the
+ *                             buffer is returned in ret_tx_buffer_ptr. The application manages how the buffer is
+ *                             partitioned and used.
  * @param tx_cb_ptr Address of the user function to call whenever a payload has been transmitted.
- * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
- *                          whenever the rx_cb_ptr callback function is invoked.
- * @param ret_connection_json_buffer_size : Size of ret_connection_json_str buffer.
- * @param ret_connection_json_str : Pointer where to write returned json string. If size of buffer is not large enough,
- *                                  then kGccgStatusBufferToSmall will be returned.
+ * @param ret_connection_json_buffer_size Size of ret_connection_json_str buffer.
+ * @param ret_connection_json_str Pointer where to write returned json string. If size of buffer is not large enough,
+ *                                then kGccgStatusBufferToSmall will be returned.
+ * @param ret_tx_buffer_ptr Pointer where to write returned start of allocated transmit payload buffer. Size is specified
+ *                          using tx_buffer_size_bytes.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific transmitter.
  *
  * @return A value from the GccgReturnStatus enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_json_str,
+                                                       uint64_t tx_buffer_size_bytes,
                                                        GccgTxCallback tx_cb_ptr,
-                                                       void* user_cb_param_ptr,
                                                        int ret_connection_json_buffer_size,
                                                        char* ret_connection_json_str,
+                                                       void* ret_tx_buffer_ptr,
                                                        GccgConnectionHandle* ret_handle_ptr);
 
 /**
  * Create an instance of a receiver. When the instance is no longer needed, use the GccgConnectionDestroy()
- * API function to free-up resources that are being used by it.
+ * API function to free-up resources that are being used by it. This API is thread-safe.
  *
  * @param connection_json_ptr Pointer to connection configuration data in json format.
  *                            Note: The number and ordering of media elements declared in the JSON defines media_count
  *                            and the ordering in media_array when the GccgRxCallback() callback API function is invoked.
  *                            The remote host must use the same configuration data when calling the
  *                            GccgTxConnectionCreate() API function to create the transmit side of the connection.
+ * @param rx_buffer_size_bytes The size in bytes of a memory region for holding received payload data.
  * @param use_linear_buffer If true, received payload data will be stored in a linear buffer. Otherwise, depending on
  *                          the underlying transport, payload data may be stored in a scatter-gather list of buffers.
  * @param rx_cb_ptr Address of the user function to call whenever a payload has been received.
- * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCallback data
- *                          whenever the rx_cb_ptr callback function is invoked.
- * @param ret_connection_json_buffer_size : Size of ret_connection_json_str buffer.
- * @param ret_connection_json_str : Pointer where to write returned json string. If size of buffer is not large enough,
- *                                  then kGccgStatusBufferToSmall will be returned.
+ * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCbData data
+ *                          whenever the rx_cb_ptr callback function is invoked. The value is not modified by the SDK.
+ * @param ret_connection_json_buffer_size Size of ret_connection_json_str buffer.
+ * @param ret_connection_json_str Pointer where to write returned json string. If size of buffer is not large enough,
+ *                                then kGccgStatusBufferToSmall will be returned.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific receiver.
  *
  * @return A value from the GccgReturnStatus enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_json_str,
+                                                       uint64_t rx_buffer_size_bytes,
                                                        bool use_linear_buffer,
                                                        GccgRxCallback rx_cb_ptr,
                                                        void* user_cb_param_ptr,
@@ -258,7 +263,7 @@ GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_js
                                                        GccgConnectionHandle* ret_handle_ptr);
 
 /**
- * Destroy a specific Tx or Rx connection and free resources that were created for it.
+ * Destroy a specific Tx or Rx connection and free resources that were created for it. This API is thread-safe.
  *
  * @param handle Connection handle returned by one of the ...ConnectionCreate() API functions.
  *
@@ -270,13 +275,16 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  * Transmit a payload of data to the receiver. The connection must have been created with GccgTxConnectionCreate().
  * This function is asynchronous and will immediately return. The user callback function GccgTxCallback() registered
  * through GccgTxConnectionCreate() will be invoked when the payload has been acknowledged by the remote receiver or a
- * transmission timeout occurred.
+ * transmission timeout occurred. This API is thread-safe.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
  * @param payload_json_str Pointer to payload configuration json string.
  * @param media_array Array of SGL's that define the size and location of each media element to transmit in this
  *                    payload. If a pointer within the array is NULL, then the payload does not contain an element for
  *                    that media.
+ * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
+ *                          whenever the tx_cb_ptr callback function specified in the GccgTxConnectionCreate() API
+ *                          is invoked. The value is not modified by the SDK.
  * @param timeout_microsecs Timeout period in microseconds. If the payload is not transmitted within this period,
  *                          transmission is canceled and the GccgTxCallback() callback API function invoked with
  *                          kGccgStatusTimeoutExpired returned as the status_code in GccgTxCbData.
@@ -286,10 +294,11 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
 GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
                                               const char *payload_json_str,
                                               GccgMediaElements media_array,
+                                              void* user_cb_param_ptr,
                                               int timeout_microsecs);
 
 /**
- * Free an array of receive buffers that was used by the GccgRxCallback() callback API function.
+ * Free an array of receive buffers that was used by the GccgRxCallback() callback API function. This API is thread-safe.
  *
  * @param media_array Pointer to a structure that contains an array of media elements to free and the number of elements
  *                    in the array.

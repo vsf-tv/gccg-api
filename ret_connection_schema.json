@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vsf-tv/gccg-api/blob/main/gccg_connection.schema.json",
+  "description": "Schema for VSF GCCG connection parameters",
+  "title": "GCCG Connection Parameters schema",
+  "version": "0.1",
+  "type": "object",
+  "properties": {
+    "gccgVersion": {
+      "description": "Version of the GCCG API. Format is XX.XX",
+      "type": "string"
+    },
+    "timing": {
+      "type": "object",
+      "$ref": "#/$defs/timing"
+    },
+  },
+  "required": [ "gccgVersion", "timing" ],
+  "$defs": {
+    "timing": {
+      "type": "object",
+      "properties": {
+        "tMin": {
+          "description": "Minimum latency of the Workflow Step in milliseconds.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "tMax": {
+          "description": "Maximum latency of the Workflow Step in milliseconds.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "tMinAccumulated": {
+          "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
+          "type": "integer"
+        },
+        "t99Accumulated": {
+          "description": "Accumulated maximum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
