@@ -24,10 +24,10 @@ JSON is used by the API functions in order to pass configuration information.
 
 Each different implementation must register a URN for its specific transport format, used in the “transport” key of the IS-04 sender and receiver declarations. The underlying implementation also defines a transport parameters structure specific to the implementation - this structure is indicated by the transport URN. In order to isolate the application from differing transport formats, the transport parameters structure shall be conveyed as a JSON-formatted object through the API and exposed in the related NMOS IS-05 sender and receiver structures.  It is the responsibility of the implementation provider to register a JSON schema and URN for its transport parameters object format in the AMWA NMOS Parameter Register.
 
-The parameters are carried within the JSON string using the ```connection_json_ptr``` parameter of the  ```GccgTxConnectionCreate()``` and ```GccgRxConnectionCreate()``` API functions. The parent JSON key is ```"transport_parameters"```. A simplified example is shown below:
+The parameters are carried within the JSON string using the ```connection_json_ptr``` parameter of the  ```GccgTxConnectionCreate()``` and ```GccgRxConnectionCreate()``` API functions. The parent JSON key is ```"transportParameters"```. Refer to [connection schema](connection_schema.json) and [payload schema](connection_schema.json) files. A simplified example is shown below:
 
 ```
-  "transport_parameters": {
+  "transportParameters": {
     ## Transport specific key/value pairs go here. A few are shown below: ##
     "transport": "urn:x-nmos:transport:rtp",
     "format": "urn:x-nmos:format:video",
@@ -44,111 +44,11 @@ The ```GccgTxConnectionCreate()``` and ```GccgRxConnectionCreate()``` API functi
 
 ### ```connection_json_ptr```
 
-This parameter points to a JSON string that use used to configure a new connection. Below is an example. For clarity, double hashes have been used to add in-line comments.
-```
-{
-  "profileVersion": "01.00",  ## Version of this JSON ##
-  "timing": {         ## Note: These values must not change over the lifetime of the connection except as noted below. ##
-    "GMID": 12345678, ## 64-bit Grandmaster Clock Identifier. For non-2110 based environments, use best fit (ie. mac address). ##
-    "COT": 12345678,  ## 64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE ##
-                      ## Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds. ##
-    "LAT": 12345678,  ## 64-bit Local Arrival Timestamp in same format as COT. ##
-    "tMinAccumulated": 100, ## Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. ##
-                            ## Can change but the change is disruptive to the Workflow timing while the Workflow adapts. ##
-    "t99Accumulated": 200   ## Accumulated maximum latency of the Workflow path up to this Workflow Step, in milliseconds. ##
-                            ## Can change but the change is disruptive to the Workflow timing while the Workflow adapts. ##
-  },
-
-  "transport_parameters": {
-    ## Transport specific key/value pairs go here ##
-  },
-
-  ## A Media Flow containing one or more Media Elements that belong to the same media essence/stream. ##
-  "mediaFlow": {
-    ## Array of Media Elements, containing one or more of the following media types: ##
-    "mediaElement": [
-      {
-        "type": "video",
-        "level": "1080p60"     ## 1080p30, 1080p60, UHD-1, UHD-2, HFR? ##
-        "encodingName": "raw", ## Video options are from the IANA registered video media types. ##
-                               ## See https://www.iana.org/assignments/media-types/media-types.xhtml#video ##
-        "attributes": {
-          "fmtp": {
-            "sampling": "YCbCr-4:2:2",
-            "depth": 10,
-            "width": 1920,
-            "height": 1080,
-            "exactframerate": "60000/1001",
-            "colorimetry": "BT709",
-            "interlace": false,  ## Type of video. true= interlaced, false= progressive. ##
-            "firstField": true,  ## If interlaced, defines field. true= first field, false= second field. ##
-            "segmented": false,
-            "TCS": "SDR",
-            "RANGE": "NARROW",
-            "PAR": "12:13",
-            "alphaIncluded": false,
-            "partialFrame": {
-              "width": 0,
-              "height": 0,
-              "hOffset": 0,
-              "vOffset": 0
-            },
-          },
-        },
-      },
-      {
-        "type": "audio",
-        "encodingName": "pcm",      ## Audio options are: "st2110-31" or "pcm" ##
-        "attributes": {
-          "totalChannels": 4      ## Total number of channels. Fixed for lifetime of connection. ##
-          "activeChannels": 4     ## Total number of active channels. Can vary, but cannot exceed totalChannels. ##
-          "channelOrder": "SMPTE2110.(SGRP)", ## Channel order string. ##
-          "language": "EN",       ## Language code. ##
-          "samplingRate": 48,     ## Sampling rate in Khz. Fixed for lifetime of connection. ##
-          "originalBitDepth": 24, ## Original bit depth of the samples. ##
-          "sampleCount": 100      ## Number of samples included in each channel. ##
-          },
-        },
-        {
-          "type": "ancillary-data",
-          "encodingName": "rfc8331",## The only ancillary-data option is "rfc8331". ##
-          "packetCount": 100,       ## Number of ANC packets being transported. If there is no ANC data to be transmitted ##
-                                    ## in a given period, the header shall still be sent in a timely manner indicating a ##
-                                    ## count of zero. ##
-          "interlace": false,       ## Type of video. true= interlaced, false= progressive. ##
-          "evenField": true,        ## If interlace, defines field. true= even field, false= odd field. ##
-          "lumaChannel": false,     ## Whether the ANC data corresponds to the luma (Y) channel or not. ##
-          "lineNumber": 10,         ## Optional. The interface line number of the ANC data (in cases where legacy location ##
-                                    ## is not required, users are encouraged to use the location-free indicators specified ##
-                                    ## in RFC8331). ##
-          "DID", 0                  ## Optional. Data Identifier Word that indicates the type of ancillary data that the ##
-                                    ## packet corresponds to. ##
-          "SDID", 0,                ## Optional. Secondary Data Identifier (8-bit value). Valid if DID is less than 128. ##
-          "dataWordCount": 10       ## Number of data words for each ANC packet. ##
-          ## Note: The horizontal offset and stream number, which are present in the RFC, are not used here. ##
-        }
-      ]
-    }
-  }
-}
-```
+This parameter points to a JSON string used to configure a new connection. The schema is located [here](connection_schema.json).
 
 ### ```ret_connection_json_str```
 
-This parameter points to where returned connection data should be written in the form of a JSON string. Below is an example of a returned JSON string. For clarity, double hashes have been used to add in-line comments.
-
-```
-{
-  "profileVersion": "01.00",  ## Version of this JSON ##
-
-  "timing": {
-    "tMin": 60,      ## Minimum latency of the Workflow Step in milliseconds. ##
-    "t99": 120,      ## Maximum latency of the Workflow Step in milliseconds. ##
-    "tMinAccumulated": 160, ## Accumulated minimum latency of the Workflow path up to this Workflow Step's output. ##
-    "t99Accumulated": 320   ## Accumulated maximum latency of the Workflow path up to this Workflow Step's output. ##
-  }
-}
-```
+This parameter points to where returned connection data should be written in the form of a JSON string. The schema is located [here](ret_connection_schema.json).
 
 ## Transfer/Receive Payload APIs
 
@@ -156,15 +56,7 @@ The ```GccgRxCallback()``` callback API function is invoked when a payload has b
 
 ## ```payload_json_str```
 
-This parameter points to a JSON string that is used for informational purposes when transmitting and receiving payloads. When transmitting, it can be use to define configurable changes to a payload. Below is an example of a payload JSON string. For clarity, double hashes have been used to add in-line comments.
-
-```
-{
-  "profileVersion": "01.00",  ## Version of this JSON ##
-  "timing" : []               ## Same as the connection's timing array. ##
-  "media": []                 ## Same as connection's media array. ##
-}
-```
+This parameter points to a JSON string that is used for informational purposes when transmitting and receiving payloads. When transmitting, it can be use to define configurable changes to a payload. The schema is located [here](payload_schema.json).
 
 # Uncompressed Video Data Format
 
