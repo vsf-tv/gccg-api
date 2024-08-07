@@ -44,50 +44,26 @@ typedef struct GccgTimestamp {
     uint32_t nanoseconds;
 } GccgTimestamp;
 
-typedef struct GccgSglEntry GccgSglEntry;
 /**
- * @brief This structure represents a single, contiguous region of memory as part of a scatter-gather list.
+ * @brief Type use to define a single media element which is used to represent data from one contiguous region of
+ * memory.
  */
-struct GccgSglEntry {
-    /// @brief The starting address of the data.
-    void* address_ptr;
+typedef struct {
+    /// @brief Origination timestamp to associate with the payload.
+    GccgTimestamp origination_timestamp;
 
     /// @brief The size of the data in bytes.
     int size_in_bytes;
 
+    /// @brief The starting address of the data.
+    void* address_ptr;
+
     /// @brief User defined parameter. This value is not modified by the API.
     void* user_param_ptr;
 
-    /// @brief Handle to private data used within the SDK that relates to this SGL entry. Do not use or modify this
-    /// value.
+    /// @brief Handle to internal data used within the SDK that relates to this payload. Do not use or modify this value.
     void* internal_data_ptr;
-
-    /// @brief The next entry in the list or NULL if this is the final entry in the list.
-    GccgSglEntry* next_ptr;
-};
-
-/**
- * @brief This structure defines a scatter-gather list (SGL) which is used to represent an array of data comprising one
- * or more contiguous regions of memory.
- */
-typedef struct {
-    /// @brief Origination timestamp to associate with the SGL.
-    GccgTimestamp origination_timestamp;
-
-    /// @brief Total size of data in the list, in units of bytes. This value can be calculated by walking the sgl_array,
-    /// but is provided here for convenience and efficiency. NOTE: This value must be the same as the value calculated
-    /// from walking the list and summing the size_in_bytes for each GccgSglEntry.
-    int total_data_size;
-
-    /// @brief Pointer to the first entry in the singly-linked list of SGL entries.
-    GccgSglEntry* sgl_head_ptr;
-
-    /// @brief Pointer to the last entry in the singly-linked list of SGL entries.
-    GccgSglEntry* sgl_tail_ptr;
-
-    /// @brief Handle to internal data used within the SDK that relates to this SGL. Do not use or modify this value.
-    void* internal_data_ptr;
-} GccgSgList;
+} GccgMediaElement;
 
 /**
  * @brief Type used to define a list of media elements. When transmitting media, this list is used as a parameter passed
@@ -100,10 +76,10 @@ typedef struct {
     ///
     /// Note: This value must match the number of media elements configured when the connection was created using one
     /// of the ...ConnectionCreate() API functions and cannot change. However, to allow for dynamic changes, pointers
-    /// in sgl_array may be set to NULL to indicate one or more media elements are not present for a given payload.
+    /// in payload_array may be set to NULL to indicate one or more media elements are not present for a given payload.
     int count;
 
-    GccgSgList** sgl_array; ///< Pointer to start of the array of media element SGL pointers.
+    GccgMediaElement** media_array; ///< Pointer to start of the array of media element pointers.
 } GccgMediaElements;
 
 /**
@@ -133,7 +109,7 @@ typedef struct {
  * provide it to GccgTxConnectionCreate() as a parameter.
  *
  * This callback function is invoked when a complete payload has been transmitted.
- * 
+ *
  * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
  * for this callback function to be invoked. In a multi-threaded configuration, this function may be invoked on a thread
  * that is different from the thread that was used to create the connection. The SDK ensures that only one thread will call
@@ -175,7 +151,7 @@ typedef struct {
  * This callback function is invoked when a complete payload has been received. The application must use the
  * GccgRxFreeBuffer() API function to free the buffer. This can either be done within the user callback function or
  * at a later time whenever the application is done with the buffer.
- * 
+ *
  * Note: In a single threaded event loop driven configuration, the GccgEventLoopPoll() API function must be called in order
  * for this callback function to be invoked. In a multi-threaded configuration, this function may be invoked on a thread
  * that is different from the thread that was used to create the connection. The SDK ensures that only one thread will call
@@ -188,7 +164,7 @@ typedef void (*GccgRxCallback)(const GccgRxCbData* data_ptr);
 /**
  * @brief Initialize the GCCG transport API. This defines the number of threads and thread priority the underlying
  * implementation can use. It must be invoked once before using any other APIs.
- * 
+ *
  * @param maximum_thread_count Maximum number of threads the underlying API can use. If zero is specified, then the
  *                             GccgEventLoopPoll() API must be invoked as part of the application's single-threaded
  *                             event loop. Use -1 to not restrict the implementation.
@@ -240,8 +216,6 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_js
  *                            The remote host must use the same configuration data when calling the
  *                            GccgTxConnectionCreate() API function to create the transmit side of the connection.
  * @param rx_buffer_size_bytes The size in bytes of a memory region for holding received payload data.
- * @param use_linear_buffer If true, received payload data will be stored in a linear buffer. Otherwise, depending on
- *                          the underlying transport, payload data may be stored in a scatter-gather list of buffers.
  * @param rx_cb_ptr Address of the user function to call whenever a payload has been received.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCbData data
  *                          whenever the rx_cb_ptr callback function is invoked. The value is not modified by the SDK.
@@ -255,7 +229,6 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_js
  */
 GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_json_str,
                                                        uint64_t rx_buffer_size_bytes,
-                                                       bool use_linear_buffer,
                                                        GccgRxCallback rx_cb_ptr,
                                                        void* user_cb_param_ptr,
                                                        int ret_connection_json_buffer_size,
@@ -279,7 +252,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
  * @param payload_json_str Pointer to payload configuration json string.
- * @param media_array Array of SGL's that define the size and location of each media element to transmit in this
+ * @param media_array Array of media elements that define the size and location of each media element to transmit in this
  *                    payload. If a pointer within the array is NULL, then the payload does not contain an element for
  *                    that media.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
@@ -310,9 +283,9 @@ GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(GccgMediaElements *media_array)
 /**
  * @brief Only required when using a single-threaded, event loop to service the API. Must specify a value of zero for
  *        maximum_thread_count when invoking the GccgInitialize() API function.
- * 
+ *
  * @param handle Connection handle returned by one of the create connection functions.
- * 
+ *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgEventLoopPoll(GccgConnectionHandle handle);
