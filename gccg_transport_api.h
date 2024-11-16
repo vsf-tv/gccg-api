@@ -44,43 +44,21 @@ typedef struct GccgTimestamp {
     uint32_t nanoseconds;
 } GccgTimestamp;
 
-/**
- * @brief Type use to define a single media element which is used to represent data from one contiguous region of
- * memory.
- */
-typedef struct {
-    /// @brief Origination timestamp to associate with the payload.
+/// @brief A structure for holding buffer information for TX, supports slices
+typedef struct GccgBuffer {
+    /// Address of memory buffer to use
+    void *buffer;
+    /// length of buffer
+    uint32_t bytes;
+    /// set to 1 if the buffer is a slice of a buffer, 0 if its a contiguous element
+    uint32_t is_slice;
+    /// slice index, index of slice in a frame, 0 - 7, sub slices are only available in 1/8 chunk of a payload
+    uint32_t slice_index;
+    /// timestamp applied to buffer
     GccgTimestamp origination_timestamp;
-
-    /// @brief The size of the data in bytes.
-    int size_in_bytes;
-
-    /// @brief The starting address of the data.
-    void* address_ptr;
-
-    /// @brief User defined parameter. This value is not modified by the API.
-    void* user_param_ptr;
-
-    /// @brief Handle to internal data used within the SDK that relates to this payload. Do not use or modify this value.
-    void* internal_data_ptr;
-} GccgMediaElement;
-
-/**
- * @brief Type used to define a list of media elements. When transmitting media, this list is used as a parameter passed
- * to the GccgTxPayload() API that defines the media elements to transmit. When receiving media, this list defines the
- * media elements received as part of the GccgRxCallback() callback API. It is also used by the GccgRxFreeBuffer() API
- * when the application is done with received media elements to free their associated resources.
- */
-typedef struct {
-    /// @brief Number of media elements in media_array.
-    ///
-    /// Note: This value must match the number of media elements configured when the connection was created using one
-    /// of the ...ConnectionCreate() API functions and cannot change. However, to allow for dynamic changes, pointers
-    /// in payload_array may be set to NULL to indicate one or more media elements are not present for a given payload.
-    int count;
-
-    GccgMediaElement** media_array; ///< Pointer to start of the array of media element pointers.
-} GccgMediaElements;
+    /// handle of connection that the buffers relates to
+    GccgConnectionHandle connection_handle;
+} GccgBuffer;
 
 /**
  * @brief Type used as the handle (pointer to an opaque structure) for a transmitter or receiver connection. Each handle
@@ -137,7 +115,7 @@ typedef struct {
 
     /// @brief If no error occurred, a pointer to an array of MediaElements that contain the received payload data.
     /// Otherwise the value will be NULL.
-    const GccgMediaElements* media_array;
+    const GccgBuffer *buffer;
 
     /// @brief User defined callback parameter. This value is set as a parameter of the GccgRxConnectionCreate()
     /// API function. The value is not modified by the SDK.
@@ -184,15 +162,14 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
  *                            and the ordering in media_array when using the GccgTxPayload() API function.
  *                            The remote target must use the same configuration data when calling the
  *                            GccgRxConnectionCreate() API function to create the receive side of the connection.
- * @param tx_buffer_size_bytes The size in bytes of a memory region for holding transmit payload data. A pointer to the
- *                             buffer is returned in ret_tx_buffer_ptr. The application manages how the buffer is
- *                             partitioned and used.
+ * @param tx_buffer_size_bytes tx_buffer_size_bytes The size in bytes of a memory region for holding a single transmit payload data.
+ * @param tx_buffer_count Positive integer count of buffers requested by the application for sending
  * @param tx_cb_ptr Address of the user function to call whenever a payload has been transmitted.
  * @param ret_connection_json_buffer_size Size of ret_connection_json_str buffer.
  * @param ret_connection_json_str Pointer where to write returned json string. If size of buffer is not large enough,
  *                                then kGccgStatusBufferToSmall will be returned.
- * @param ret_tx_buffer_ptr Pointer where to write returned start of allocated transmit payload buffer. Size is specified
- *                          using tx_buffer_size_bytes.
+ * @param ret_tx_buffer_ptrs Pointer to an array of pointers to receive allocated transmit payload buffers of the size requested.
+ *                          using tx_buffer_size_bytes, must be karge enough to accomadate tx_buffer_count pointers.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific transmitter.
  *
@@ -215,7 +192,7 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_js
  *                            and the ordering in media_array when the GccgRxCallback() callback API function is invoked.
  *                            The remote host must use the same configuration data when calling the
  *                            GccgTxConnectionCreate() API function to create the transmit side of the connection.
- * @param rx_buffer_size_bytes The size in bytes of a memory region for holding received payload data.
+ * @param rx_buffer_size_bytes tx_buffer_size_bytes The size in bytes of a memory region for holding a single receive payload data.
  * @param rx_cb_ptr Address of the user function to call whenever a payload has been received.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCbData data
  *                          whenever the rx_cb_ptr callback function is invoked. The value is not modified by the SDK.
@@ -245,16 +222,29 @@ GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_js
 GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handle);
 
 /**
- * Transmit a payload of data to the receiver. The connection must have been created with GccgTxConnectionCreate().
- * This function is asynchronous and will immediately return. The user callback function GccgTxCallback() registered
- * through GccgTxConnectionCreate() will be invoked when the payload has been acknowledged by the remote receiver or a
- * transmission timeout occurred. This API is thread-safe.
+ * Request a buffer for the Transmit a payload of data to the receiver.
+ * The connection must have been created with GccgTxConnectionCreate().
+ * If no buffer is free a NULL pointer is returned
+ * This API is thread-safe.
+ *
+ * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
+ * @param buffer Pointer to a GccgBufer to receiev te data for a transmit buffer
+ * @param slice_index set to -1 when slice based working is not requested, set to 0-7 to indicate the slice requested
+ *                    if working in slices of a buffer, only 8 slice configuration supported,
+ *
+ * @return A value from the GCCG_INTERFACE enumeration.
+ */
+GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle, GccgBuffer *buffer, int32_t slice_index);
+
+/**
+ * Request a buffer for the Transmit a payload of data to the receiver.
+ * The connection must have been created with GccgTxConnectionCreate().
+ * If no buffer is free a NULL pointer is returned
+ * This API is thread-safe.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
  * @param payload_json_str Pointer to payload configuration json string.
- * @param media_array Array of media elements that define the size and location of each media element to transmit in this
- *                    payload. If a pointer within the array is NULL, then the payload does not contain an element for
- *                    that media.
+ * @param buffer pointer to a GccgBuffer for thsi connection
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
  *                          whenever the tx_cb_ptr callback function specified in the GccgTxConnectionCreate() API
  *                          is invoked. The value is not modified by the SDK.
@@ -265,20 +255,18 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  * @return A value from the GCCG_INTERFACE enumeration.
  */
 GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
-                                              const char *payload_json_str,
-                                              GccgMediaElements media_array,
+                                              const GccgBuffer *buffer,
                                               void* user_cb_param_ptr,
                                               int timeout_microsecs);
 
 /**
  * Free an array of receive buffers that was used by the GccgRxCallback() callback API function. This API is thread-safe.
  *
- * @param media_array Pointer to a structure that contains an array of media elements to free and the number of elements
- *                    in the array.
+ * @param buffer Pointer to a GccgBuffer*buffer that is to be freed
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(GccgMediaElements *media_array);
+GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(const GccgBuffer *buffer);
 
 /**
  * @brief Only required when using a single-threaded, event loop to service the API. Must specify a value of zero for
