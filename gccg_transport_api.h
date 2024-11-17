@@ -7,6 +7,8 @@
 #ifndef GCCG_TRANSPORT_API_H__
 #define GCCG_TRANSPORT_API_H__
 
+#include <stdint.h>
+
 /**
  * @file
  * @brief
@@ -44,6 +46,12 @@ typedef struct GccgTimestamp {
     uint32_t nanoseconds;
 } GccgTimestamp;
 
+/**
+ * @brief Type used as the handle (pointer to an opaque structure) for a transmitter or receiver connection. Each handle
+ * represents a single data flow.
+ */
+typedef void* GccgConnectionHandle;
+
 /// @brief A structure for holding buffer information for TX, supports slices
 typedef struct GccgBuffer {
     /// Address of memory buffer to use
@@ -59,12 +67,6 @@ typedef struct GccgBuffer {
     /// handle of connection that the buffers relates to
     GccgConnectionHandle connection_handle;
 } GccgBuffer;
-
-/**
- * @brief Type used as the handle (pointer to an opaque structure) for a transmitter or receiver connection. Each handle
- * represents a single data flow.
- */
-typedef void* GccgConnectionHandle;
 
 /**
  * @brief A structure of this type is passed as the parameter to GccgTxCallback(). It contains data related to the
