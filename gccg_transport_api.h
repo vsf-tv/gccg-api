@@ -107,15 +107,11 @@ typedef void (*GccgTxCallback)(const GccgTxCbData* data_ptr);
 typedef struct {
     GccgReturnStatus status_code;
 
-    /// @brief The handle of the instance which was created using a previous call to the GccgTxConnectionCreate() API
-    /// function.
-    GccgConnectionHandle connection_handle;
-
     /// @brief If no error occurred, a pointer to the payload configuration json string received with the payload.
     /// Otherwise the value will be NULL.
     const char *payload_json_str;
 
-    /// @brief If no error occurred, a pointer to an array of MediaElements that contain the received payload data.
+    /// @brief If no error occurred, a pointer to a GccgBuffer that contains the received payload data.
     /// Otherwise the value will be NULL.
     const GccgBuffer *buffer;
 
@@ -268,7 +264,7 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(const GccgBuffer *buffer);
+GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(const GccgRxCbData *buffer);
 
 /**
  * @brief Only required when using a single-threaded, event loop to service the API. Must specify a value of zero for
