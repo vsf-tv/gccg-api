@@ -52,7 +52,7 @@
         "Level 3 UHD",
         "Level 3+ UHD",
         "Level 3C UHD",
-        "Level 4 UHD",
+        "Level 4 UHD"
       ]
     },
     "timing": {
@@ -174,11 +174,11 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "segmented": {
           "description": "If true video is segmented.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "TCS": {
           "description": "SMPTE 2110-20 Media type parameters for Transfer Characteristic System.",
@@ -239,10 +239,10 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 4320
-            },
-          },
-        },
-      },
+            }
+          }
+        }
+      }
     },
     "audioAttributes": {
       "type": "object",
@@ -286,7 +286,7 @@
         "originalDepth": {
           "description": "Original bit depth of the audio samples.",
           "type": "integer",
-          "minimum": 0,
+          "minimum": 0
         },
         "sampleCount": {
           "description": "Number of audio samples included in each audio channel.",
@@ -308,7 +308,7 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "field": {
           "description": "Zero or one. For interlaced, zero= first field, one= second field. For progressive, shall be set to zero, except in the case of progressive segmented frame data where it indicates the segment.",
@@ -341,4 +341,5 @@
       }
     }
   }
+}
 }

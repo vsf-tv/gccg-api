@@ -13,7 +13,7 @@
     "timing": {
       "type": "object",
       "$ref": "#/$defs/timing"
-    },
+    }
   },
   "required": [ "gccgVersion", "timing" ],
   "$defs": {
