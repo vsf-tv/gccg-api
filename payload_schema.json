@@ -155,11 +155,11 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "segmented": {
           "description": "If true video is segmented.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "TCS": {
           "description": "SMPTE 2110-20 Media type parameters for Transfer Characteristic System.",
@@ -220,10 +220,10 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 4320
-            },
-          },
-        },
-      },
+            }
+          }
+        }
+      }
     },
     "audioAttributes": {
       "type": "object",
@@ -282,7 +282,7 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "field": {
           "description": "Zero or one. For interlaced, zero= first field, one= second field. For progressive, shall be set to zero, except in the case of progressive segmented frame data where it indicates the segment.",
@@ -313,4 +313,5 @@
       }
     }
   }
+}
 }
