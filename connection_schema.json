@@ -39,7 +39,6 @@
   "required": [ "gccgVersion", "timing", "level", "mediaFlow" ],
   "$defs": {
     "level": {
-      "type": "object",
       "description": "Level capability",
       "type": "string",
       "enum": [
