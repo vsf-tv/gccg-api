@@ -37,11 +37,14 @@
       "properties": {
         "COT": {
           "description": "64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d{9}$"
+
         },
         "LAT": {
           "description": "64-bit Local Arrival Timestamp in same format as COT.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d{9}$"
         },
         "tMinAccumulated": {
           "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
