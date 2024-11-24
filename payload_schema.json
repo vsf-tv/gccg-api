@@ -82,7 +82,8 @@
             "MP2T",
             "H264",
             "H265",
-            "jxsv"
+            "jxsv",
+            "planar"
           ]
         },
         "clockRate": {
@@ -142,7 +143,8 @@
         },
         "exactframerate": {
           "description": "Video frame-rate numerator/denominator.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d+$"
         },
         "colorimetry": {
           "description": "Video colorimetry.",
@@ -191,7 +193,8 @@
         },
         "PAR": {
           "description": "Pixel Aspect Ratio (PAR) width:height.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d+$"
         },
         "alphaIncluded": {
           "description": "If true alpha channel is included.",
