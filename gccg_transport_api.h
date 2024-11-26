@@ -68,6 +68,10 @@ typedef struct GccgBuffer {
     GccgConnectionHandle connection_handle;
 } GccgBuffer;
 
+typedef struct GccgBufferSlices {
+    GccgBuffer *slices[8];
+} GccgBufferSlices;
+
 /**
  * @brief A structure of this type is passed as the parameter to GccgTxCallback(). It contains data related to the
  * transmission of a single payload to a receiver and data related to the Tx connection.
@@ -176,9 +180,9 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
 GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_json_str,
                                                        uint64_t tx_buffer_size_bytes,
                                                        GccgTxCallback tx_cb_ptr,
+                                                       void* user_cb_param_ptr,
                                                        int ret_connection_json_buffer_size,
                                                        char* ret_connection_json_str,
-                                                       void* ret_tx_buffer_ptr,
                                                        GccgConnectionHandle* ret_handle_ptr);
 
 /**
@@ -226,13 +230,24 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
  * This API is thread-safe.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
- * @param buffer Pointer to a GccgBufer to receiev te data for a transmit buffer
- * @param slice_index set to -1 when slice based working is not requested, set to 0-7 to indicate the slice requested
- *                    if working in slices of a buffer, only 8 slice configuration supported,
+ * @param buffer Pointer to a GccgBuffer to receive the data for a transmit buffer
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle, GccgBuffer *buffer, int32_t slice_index);
+GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle, GccgBuffer *buffer);
+
+/**
+ * Request a buffer for the Transmit a payload of data to the receiver.
+ * The connection must have been created with GccgTxConnectionCreate().
+ * If no buffer is free a NULL pointer is returned
+ * This API is thread-safe.
+ *
+ * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
+ * @param buffer_slices Pointer array of GccgBuffers to receive the data for a transmit buffers
+ *
+ * @return A value from the GCCG_INTERFACE enumeration.
+ */
+GCCG_INTERFACE GccgReturnStatus GccgRequestTxBufferSlices(GccgConnectionHandle handle, GccgBufferSlices *buffer_slices);
 
 /**
  * Request a buffer for the Transmit a payload of data to the receiver.
