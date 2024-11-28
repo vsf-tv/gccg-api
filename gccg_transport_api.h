@@ -68,8 +68,10 @@ typedef struct GccgBuffer {
     GccgConnectionHandle connection_handle;
 } GccgBuffer;
 
+#define GCCG_SLICES (8)
+
 typedef struct GccgBufferSlices {
-    GccgBuffer *slices[8];
+    GccgBuffer slices[GCCG_SLICES];
 } GccgBufferSlices;
 
 /**
