@@ -170,8 +170,6 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
  * @param ret_connection_json_buffer_size Size of ret_connection_json_str buffer.
  * @param ret_connection_json_str Pointer where to write returned json string. If size of buffer is not large enough,
  *                                then kGccgStatusBufferToSmall will be returned.
- * @param ret_tx_buffer_ptrs Pointer to an array of pointers to receive allocated transmit payload buffers of the size requested.
- *                          using tx_buffer_size_bytes, must be karge enough to accomadate tx_buffer_count pointers.
  * @param ret_handle_ptr Pointer to returned connection handle. The handle is used as a parameter to other API functions
  *                       to identify this specific transmitter.
  *
