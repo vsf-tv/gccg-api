@@ -95,6 +95,11 @@
             48000
           ]
         },
+        "traceId": {
+          "description": "Clock rate of the media. 90k for video and 48k for audio.",
+          "x-omitempty": true,
+          "type": "string"
+        },
         "videoAttributes": {
           "x-omitempty": true,
           "$ref": "#/$defs/videoAttributes"
