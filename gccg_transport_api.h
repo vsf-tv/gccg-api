@@ -180,7 +180,6 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
 GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_json_str,
                                                        uint64_t tx_buffer_size_bytes,
                                                        GccgTxCallback tx_cb_ptr,
-                                                       void* user_cb_param_ptr,
                                                        int ret_connection_json_buffer_size,
                                                        char* ret_connection_json_str,
                                                        GccgConnectionHandle* ret_handle_ptr);
