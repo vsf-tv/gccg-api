@@ -76,13 +76,7 @@
           "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
           "type": "string",
           "enum": [
-            "raw",
             "pcm",
-            "smpte291",
-            "MP2T",
-            "H264",
-            "H265",
-            "jxsv",
             "planar"
           ]
         },
@@ -122,7 +116,6 @@
           "description": "Video color sampling type.",
           "type": "string",
           "enum": [
-            "YCbCr-4:2:0",
             "YCbCr-4:2:2",
             "YCbCrA-4:2:2:4",
             "YCbCr-4:4:4",
@@ -132,7 +125,10 @@
         "depth": {
           "description": "Video pixel bit depth.",
           "type": "integer",
-          "const": 16
+          "enum": [
+            8,
+            16
+          ]
         },
         "width": {
           "description": "Video picture width in pixels.",
