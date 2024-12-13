@@ -240,7 +240,7 @@
           "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
           "type": "integer",
           "minimum": 1,
-          "maximum": 64
+          "maximum": 256
         },
         "channelOrder": {
           "description": "SMPTE 2110-30 Uncompressed audio channel groupings.",
