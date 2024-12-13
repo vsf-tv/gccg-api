@@ -239,8 +239,8 @@
         "activeChannels": {
           "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 24
+          "minimum": 1,
+          "maximum": 64
         },
         "channelOrder": {
           "description": "SMPTE 2110-30 Uncompressed audio channel groupings.",
@@ -263,7 +263,9 @@
         "depth": {
           "description": "Bit depth of the audio samples.",
           "type": "integer",
-          "minimum": 0
+          "enum": [
+            32
+          ]
         },
         "originalDepth": {
           "description": "Original bit depth of the audio samples.",
