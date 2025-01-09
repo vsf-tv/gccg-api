@@ -52,6 +52,12 @@ typedef struct GccgTimestamp {
  */
 typedef void* GccgConnectionHandle;
 
+/**
+ * @brief Type used as the handle (index to an opaque structure) for a buffer allocated by the api. Each api can use
+ * this as required
+ */
+typedef uint32_t GccgBufferHandle;
+
 /// @brief A structure for holding buffer information for TX, supports slices
 typedef struct GccgBuffer {
     /// Address of memory buffer to use
@@ -66,6 +72,8 @@ typedef struct GccgBuffer {
     GccgTimestamp origination_timestamp;
     /// handle of connection that the buffers relates to
     GccgConnectionHandle connection_handle;
+    /// handle fo the buffer managed by the api
+    GccgBufferHandle buffer_handle;
 } GccgBuffer;
 
 #define GCCG_SLICES (8)
