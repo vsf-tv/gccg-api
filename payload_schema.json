@@ -37,11 +37,14 @@
       "properties": {
         "COT": {
           "description": "64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d{9}$"
+
         },
         "LAT": {
           "description": "64-bit Local Arrival Timestamp in same format as COT.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d{9}$"
         },
         "tMinAccumulated": {
           "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
@@ -65,13 +68,16 @@
             "ancillary-data"
           ]
         },
+        "uri": {
+          "description": "URI to locate resource",
+          "type": "string"
+        },
         "encodingName": {
           "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
           "type": "string",
           "enum": [
-            "raw",
             "pcm",
-            "smpte291",
+            "planar"
             "MP2T",
             "H264",
             "H265",
@@ -86,6 +92,11 @@
             90000,
             48000
           ]
+        },
+        "traceId": {
+          "description": "To aid in tracing and observability",
+          "x-omitempty": true,
+          "type": "string"
         },
         "videoAttributes": {
           "x-omitempty": true,
@@ -109,9 +120,10 @@
           "description": "Video color sampling type.",
           "type": "string",
           "enum": [
-            "YCbCr-4:2:0",
             "YCbCr-4:2:2",
+            "YCbCrA-4:2:2:4",
             "YCbCr-4:4:4",
+            "YCbCrA-4:4:4:4",
             "RGB"
           ]
         },
@@ -120,8 +132,7 @@
           "type": "integer",
           "enum": [
             8,
-            10,
-            12
+            16
           ]
         },
         "width": {
@@ -138,7 +149,8 @@
         },
         "exactframerate": {
           "description": "Video frame-rate numerator/denominator.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d+$"
         },
         "colorimetry": {
           "description": "Video colorimetry.",
@@ -155,11 +167,11 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "segmented": {
           "description": "If true video is segmented.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "TCS": {
           "description": "SMPTE 2110-20 Media type parameters for Transfer Characteristic System.",
@@ -187,7 +199,8 @@
         },
         "PAR": {
           "description": "Pixel Aspect Ratio (PAR) width:height.",
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\d+:\\d+$"
         },
         "alphaIncluded": {
           "description": "If true alpha channel is included.",
@@ -220,10 +233,10 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 4320
-            },
-          },
-        },
-      },
+            }
+          }
+        }
+      }
     },
     "audioAttributes": {
       "type": "object",
@@ -231,8 +244,8 @@
         "activeChannels": {
           "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
           "type": "integer",
-          "minimum": 0,
-          "maximum": 24
+          "minimum": 1,
+          "maximum": 256
         },
         "channelOrder": {
           "description": "SMPTE 2110-30 Uncompressed audio channel groupings.",
@@ -255,7 +268,9 @@
         "depth": {
           "description": "Bit depth of the audio samples.",
           "type": "integer",
-          "minimum": 0
+          "enum": [
+            32
+          ]
         },
         "originalDepth": {
           "description": "Original bit depth of the audio samples.",
@@ -282,7 +297,7 @@
         },
         "interlace": {
           "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean",
+          "type": "boolean"
         },
         "field": {
           "description": "Zero or one. For interlaced, zero= first field, one= second field. For progressive, shall be set to zero, except in the case of progressive segmented frame data where it indicates the segment.",
@@ -313,4 +328,5 @@
       }
     }
   }
+}
 }

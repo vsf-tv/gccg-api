@@ -60,7 +60,7 @@ This parameter points to a JSON string that is used for informational purposes w
 
 # Uncompressed Video Data Format
 
-Raw (uncompressed) video data is stored as 8 or 16 bit planar, two plane formats are proposed, one needs to be selected
+Raw (uncompressed) video data is stored as 8 or 16 bit planar, two planar formats are proposed, one needs to be selected "TODO"
 
 Option 1)
 
