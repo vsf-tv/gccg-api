@@ -37,14 +37,11 @@
       "properties": {
         "COT": {
           "description": "64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds",
-          "type": "string",
-          "pattern": "^\\d+:\\d{9}$"
-
+          "type": "#/$defs/timestamp"
         },
         "LAT": {
           "description": "64-bit Local Arrival Timestamp in same format as COT.",
-          "type": "string",
-          "pattern": "^\\d+:\\d{9}$"
+          "type": "#/$defs/timestamp"
         },
         "tMinAccumulated": {
           "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
@@ -68,20 +65,17 @@
             "ancillary-data"
           ]
         },
-        "uri": {
-          "description": "URI to locate resource",
-          "type": "string"
+        "transportParameters" : {
+          "type": "object",
+          "description": "Transport specific parameters"
         },
         "encodingName": {
           "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
           "type": "string",
           "enum": [
             "pcm",
-            "planar"
-            "MP2T",
-            "H264",
-            "H265",
-            "jxsv"
+            "planar",
+            "smpte291"
           ]
         },
         "clockRate": {
@@ -149,8 +143,7 @@
         },
         "exactframerate": {
           "description": "Video frame-rate numerator/denominator.",
-          "type": "string",
-          "pattern": "^\\d+:\\d+$"
+          "type": "#/$defs/rational"
         },
         "colorimetry": {
           "description": "Video colorimetry.",
@@ -199,8 +192,7 @@
         },
         "PAR": {
           "description": "Pixel Aspect Ratio (PAR) width:height.",
-          "type": "string",
-          "pattern": "^\\d+:\\d+$"
+          "type": "#/$defs/rational"
         },
         "alphaIncluded": {
           "description": "If true alpha channel is included.",
@@ -244,7 +236,7 @@
         "activeChannels": {
           "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
           "type": "integer",
-          "minimum": 1,
+          "minimum": 0,
           "maximum": 256
         },
         "channelOrder": {
@@ -283,6 +275,41 @@
           "minimum": 0
         }
       }
+    },
+    "timestamp": {
+      "type": "object",
+      "properties": {
+        "seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nano_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999999
+        }
+      },
+      "required": [
+        "seconds",
+        "nano_seconds"
+      ]
+    },
+    "rational": {
+      "type": "object",
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ]
     },
     "ancillaryDataAttributes": {
       "type": "object",
