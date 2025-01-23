@@ -121,10 +121,21 @@ YYYYYY.......YYYYYYYYUUUU........UUUUVVVV........VVVV
 
 If segmented then repeat segments till Segment 8, only planar or 8 segments supported
 
-vnd.planar requested from iana as a name, awaitign confirmation, the email address GCCG@groups.vsf.tv has been used in request.
+vnd.planar has been assigned from iana as a name, the email address GCCG@groups.vsf.tv has been used in request.
+
+known formats in existing libraies, needs extending
+GStreamer GST_VIDEO_FORMAT_Y444_16LE,
+ffmpeg yuva422p16le yuv and alpha 16 bit 422
+ffmpeg yuv422p16le yuv 16 bit 422
+ffmpeg yuv422p yuv 8 bit 422
+ffmpeg yuva422p yuv and alpha 8 bit 422
+ffmpeg gbrap16le  rgb (gbr)and alpha 16 bit
+ffmpeg gbrap  rgb (gbr)and alpha 16 bit
 
 
 # Compressed Video Data Formats
+
+TODO need to decide whats happening here if anything
 
 They shall be indentified by using the Internet Assigned Numbers Authority (IANA) video name strings, which can be found at https://www.iana.org/assignments/media-types/media-types.xhtml#video, for the JSON configuration "encodingName" element.
 

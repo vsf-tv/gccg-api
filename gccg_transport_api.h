@@ -58,16 +58,16 @@ typedef void* GccgConnectionHandle;
  */
 typedef uint32_t GccgBufferHandle;
 
-/// @brief A structure for holding buffer information for TX, supports slices
+/// @brief A structure for holding buffer information for TX, supports segmented frames with 8 segments
 typedef struct GccgBuffer {
     /// Address of memory buffer to use
     void *buffer;
     /// length of buffer
     uint32_t bytes;
-    /// set to 1 if the buffer is a slice of a buffer, 0 if its a contiguous element
-    uint32_t is_slice;   switch to segment in all places
-    /// slice index, index of slice in a frame, 0 - 7, sub slices are only available in 1/8 chunk of a payload
-    uint32_t slice_index;
+    /// set to 1 if the buffer is a segment of a buffer, 0 if its a contiguous element
+    uint32_t is_segment;
+    /// segment index, index of segment in a frame, 0 - 7, sub segments are only available in 1/8 chunk of a payload
+    uint32_t segment_index;
     /// timestamp applied to buffer
     GccgTimestamp origination_timestamp;
     /// handle of connection that the buffers relates to
@@ -76,11 +76,11 @@ typedef struct GccgBuffer {
     GccgBufferHandle buffer_handle;
 } GccgBuffer;
 
-#define GCCG_SLICES (8)
+#define GCCG_SEGMENTS (8)
 
-typedef struct GccgBufferSlices {
-    GccgBuffer slices[GCCG_SLICES];
-} GccgBufferSlices;
+typedef struct GccgBufferSegments {
+    GccgBuffer segments[GCCG_SEGMENTS];
+} GccgBufferSegments;
 
 /**
  * @brief A structure of this type is passed as the parameter to GccgTxCallback(). It contains data related to the
@@ -250,11 +250,11 @@ GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle,
  * This API is thread-safe.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
- * @param buffer_slices Pointer array of GccgBuffers to receive the data for a transmit buffers
+ * @param buffer_segments Pointer array of GccgBuffers to receive the data for a transmit buffers
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgRequestTxBufferSlices(GccgConnectionHandle handle, GccgBufferSlices *buffer_slices);
+GCCG_INTERFACE GccgReturnStatus GccgRequestTxBufferSegments(GccgConnectionHandle handle, GccgBufferSegments *buffer_segments);
 
 /**
  * Request a buffer for the Transmit a payload of data to the receiver.
