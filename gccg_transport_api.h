@@ -76,6 +76,7 @@ typedef struct GccgBuffer {
     GccgBufferHandle buffer_handle;
 } GccgBuffer;
 
+/// @brief A structure for holding buffer segments information, number of segments fixed at 8,
 #define GCCG_SEGMENTS (8)
 
 typedef struct GccgBufferSegments {
@@ -187,6 +188,7 @@ GCCG_INTERFACE GccgReturnStatus GccgInitialize(int maximum_thread_count, int max
  */
 GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_json_str,
                                                        uint64_t tx_buffer_size_bytes,
+                                                       uint32_t tx_buffer_count,
                                                        GccgTxCallback tx_cb_ptr,
                                                        int ret_connection_json_buffer_size,
                                                        char* ret_connection_json_str,
@@ -201,7 +203,7 @@ GCCG_INTERFACE GccgReturnStatus GccgTxConnectionCreate(const char* connection_js
  *                            and the ordering in media_array when the GccgRxCallback() callback API function is invoked.
  *                            The remote host must use the same configuration data when calling the
  *                            GccgTxConnectionCreate() API function to create the transmit side of the connection.
- * @param rx_buffer_size_bytes tx_buffer_size_bytes The size in bytes of a memory region for holding a single receive payload data.
+ * @param rx_buffer_size_bytes The size in bytes of a memory region for holding a single receive payload data.
  * @param rx_cb_ptr Address of the user function to call whenever a payload has been received.
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgRxCbData data
  *                          whenever the rx_cb_ptr callback function is invoked. The value is not modified by the SDK.
@@ -231,7 +233,7 @@ GCCG_INTERFACE GccgReturnStatus GccgRxConnectionCreate(const char *connection_js
 GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handle);
 
 /**
- * Request a buffer for the Transmit a payload of data to the receiver.
+ * Request a buffer for the transmission of data payload to the receiver.
  * The connection must have been created with GccgTxConnectionCreate().
  * If no buffer is free a NULL pointer is returned
  * This API is thread-safe.
@@ -244,7 +246,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
 GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle, GccgBuffer *buffer);
 
 /**
- * Request a buffer for the Transmit a payload of data to the receiver.
+ * Request a set of buffer segments for the transmission of data payload to the receiver.
  * The connection must have been created with GccgTxConnectionCreate().
  * If no buffer is free a NULL pointer is returned
  * This API is thread-safe.
@@ -280,13 +282,13 @@ GCCG_INTERFACE GccgReturnStatus GccgTxPayload(GccgConnectionHandle handle,
                                               int timeout_microsecs);
 
 /**
- * Free an array of receive buffers that was used by the GccgRxCallback() callback API function. This API is thread-safe.
+ * Free a receive buffer that was used by the GccgRxCallback() callback API function. This API is thread-safe.
  *
- * @param buffer Pointer to a GccgBuffer*buffer that is to be freed
+ * @param buffer Pointer to a GccgBuffer *buffer that is to be freed
  *
  * @return A value from the GCCG_INTERFACE enumeration.
  */
-GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(const GccgRxCbData *buffer);
+GCCG_INTERFACE GccgReturnStatus GccgRxFreeBuffer(const GccgBuffer *buffer);
 
 /**
  * @brief Only required when using a single-threaded, event loop to service the API. Must specify a value of zero for

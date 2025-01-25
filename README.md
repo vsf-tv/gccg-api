@@ -130,7 +130,7 @@ ffmpeg yuv422p16le yuv 16 bit 422
 ffmpeg yuv422p yuv 8 bit 422
 ffmpeg yuva422p yuv and alpha 8 bit 422
 ffmpeg gbrap16le  rgb (gbr)and alpha 16 bit
-ffmpeg gbrap  rgb (gbr)and alpha 16 bit
+ffmpeg gbrp rgb (gbr) 8 bit
 
 
 # Compressed Video Data Formats
