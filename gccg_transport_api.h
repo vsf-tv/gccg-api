@@ -246,7 +246,7 @@ GCCG_INTERFACE GccgReturnStatus GccgConnectionDestroy(GccgConnectionHandle handl
 GCCG_INTERFACE GccgReturnStatus GccgRequestTxBuffer(GccgConnectionHandle handle, GccgBuffer *buffer);
 
 /**
- * Request a set of buffer segments for the transmission of data payload to the receiver.
+ * Request a set of buffers for the segmented transmission of data payload to the receiver.
  * The connection must have been created with GccgTxConnectionCreate().
  * If no buffer is free a NULL pointer is returned
  * This API is thread-safe.
