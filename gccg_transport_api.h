@@ -74,6 +74,8 @@ typedef struct GccgBuffer {
     GccgConnectionHandle connection_handle;
     /// handle fo the buffer managed by the api
     GccgBufferHandle buffer_handle;
+    /// Pointer to payload configuration json string
+    char *payload_json_str;
 } GccgBuffer;
 
 /// @brief A structure for holding buffer segments information, number of segments fixed at 8,
@@ -265,7 +267,6 @@ GCCG_INTERFACE GccgReturnStatus GccgRequestTxBufferSegments(GccgConnectionHandle
  * This API is thread-safe.
  *
  * @param handle Connection handle returned by the GccgTxConnectionCreate() API function.
- * @param payload_json_str Pointer to payload configuration json string.
  * @param buffer pointer to a GccgBuffer for this connection
  * @param user_cb_param_ptr User defined callback parameter. This value is set as part of the GccgTxCbData data
  *                          whenever the tx_cb_ptr callback function specified in the GccgTxConnectionCreate() API
