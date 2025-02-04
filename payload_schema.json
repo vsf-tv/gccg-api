@@ -18,6 +18,12 @@
       "type": "object",
       "$ref": "#/$defs/timestamp"
     },
+    "aspect_ratio": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "frame_rate": {
+      "$ref": "#/$defs/frame_rate"
+    },
     "transportParameters" : {
       "type": "object",
       "description": "Transport specific parameters"
@@ -36,7 +42,45 @@
   },
   "required": [ "gccgVersion", "timing", "mediaFlow" ],
   "$defs": {
-    "timestamp": {
+    "aspect_ratio": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "frame_rate": {
+      "type": "object",
+      "properties": {
+        "num": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "denom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "num",
+        "denom"
+      ]
+    },
+  "timestamp": {
         "type": "object",
         "properties": {
           "seconds": {
@@ -163,8 +207,7 @@
           },
           "exactframerate": {
             "description": "Video frame-rate numerator/denominator.",
-            "type": "string",
-            "pattern": "^\\d+:\\d+$"
+            "$ref": "#/$defs/frame_rate"
           },
           "colorimetry": {
             "description": "Video colorimetry.",
@@ -213,8 +256,7 @@
           },
           "PAR": {
             "description": "Pixel Aspect Ratio (PAR) width:height.",
-            "type": "string",
-            "pattern": "^\\d+:\\d+$"
+            "$ref": "#/$defs/aspect_ratio"
           },
           "alphaIncluded": {
             "description": "If true alpha channel is included.",
