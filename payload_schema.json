@@ -140,7 +140,7 @@
             "type": "string"
           },
           "planarMode": {
-            "description": "which planar mode is used, full frame where all Y is followed by All U etc, only if not segmented, or line where Y for lines is followed by U for line etc, required for segmented mode",
+            "description": "which planar mode is used, default is full frame where all Y is followed by All U etc, only if not segmented, or line where Y for lines is followed by U for line etc, required for segmented mode",
             "type": "string",
             "enum": [
               "full",
