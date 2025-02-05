@@ -137,10 +137,14 @@
           },
           "encodingName": {
             "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
+            "type": "string"
+          },
+          "planarMode": {
+            "description": "which planar mode is used, full frame where all Y is followed by All U etc, only if not segmented, or line where Y for lines is followed by U for line etc, required for segmented mode",
             "type": "string",
             "enum": [
-              "pcm",
-              "planar"
+              "full",
+              "line"
             ]
           },
           "clockRate": {
