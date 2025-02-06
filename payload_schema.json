@@ -116,6 +116,10 @@
           "t99Accumulated": {
             "description": "Accumulated maximum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
             "type": "integer"
+          },
+          "monotonic": {
+            "description": "Set to true indicates that the timestamps are increasing, when false payload buffers can arrive out of time order",
+            "type": "boolean"
           }
         }
       },
