@@ -64,11 +64,11 @@ Raw (uncompressed) video data is stored in pgroup format as defined in ST2110-20
 ```
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
- 
+
 The value "raw" must be used for the JSON configuration "encodingName" element as shown below:
 ```
  "encodingName": "raw"
@@ -77,7 +77,7 @@ The value "raw" must be used for the JSON configuration "encodingName" element a
 # Compressed Video Data Formats
 
 They shall be indentified by using the Internet Assigned Numbers Authority (IANA) video name strings, which can be found at https://www.iana.org/assignments/media-types/media-types.xhtml#video, for the JSON configuration "encodingName" element.
- 
+
 An example for H.264 compressed video is shown below:
 
 ```
@@ -128,3 +128,10 @@ The section below is repeated once for each ancillary data packet, as specified 
                                   |   Checksum_Word   |word_align |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
+
+# Transmission Order
+Payload buffers will be transmitted in the order in which the GccgTxPayload() function is called and then delivered to the recieve callback in the same order
+
+The API is not responsible for re-ordering of payload buffers using timestamps, this is the responsibility of the user of the API to trasnmit in the correct order or re-order on reciept.
+
+
