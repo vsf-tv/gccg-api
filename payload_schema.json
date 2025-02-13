@@ -26,7 +26,11 @@
     },
     "transportParameters" : {
       "type": "object",
-      "description": "Transport specific parameters"
+      "description": "Transport specific parameters",
+      "uri": {
+        "description": "URI to locate resource",
+        "type": "string"
+      }
     },
     "mediaFlow": {
       "type": "object",
@@ -134,10 +138,6 @@
               "audio",
               "ancillary-data"
             ]
-          },
-          "uri": {
-            "description": "URI to locate resource",
-            "type": "string"
           },
           "encodingName": {
             "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
