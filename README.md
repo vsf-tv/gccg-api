@@ -60,19 +60,78 @@ This parameter points to a JSON string that is used for informational purposes w
 
 # Uncompressed Video Data Format
 
-Raw (uncompressed) video data is stored in pgroup format as defined in ST2110-20. Note: For interlaced video the fields shall be transmitted in time order, first field first. An example of a 5 Octet 4:2:2 10-bit pgroup is shown below:
-```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- |   C’B (10 bits)   |   Y0’ (10 bits)   |   C’R (10 bits)   |   Y1’ (10 bits)   |
- +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-```
+Raw (uncompressed) video data is stored as 8 or 16 bit planar, two planar formats are proposed, one needs to be selected "TODO"
 
-The value "raw" must be used for the JSON configuration "encodingName" element as shown below:
-```
- "encodingName": "raw"
-```
+Option 1)
+
+Y Plane of width x height samples
+
+followed by
+
+U Plane of width x height samples (444) or width x height/2 samples  (422)
+
+followed by
+
+V Plane of width x height samples (444) or width x height/2 samples  (422)
+
+optionally followd by Alpha plane
+
+Alpha Plane of width x height samples
+
+This does not work well with segmented frames as the memory is not contiguous from segemnt to segment
+
+YYYYYYYY........YYYYYYYY
+........................
+YYYYYYYY........YYYYYYYY
+UUUU........UUUU
+................
+UUUU........UUUU
+VVVV........VVVV
+................
+VVVV........VVVV
+
+Option 2)
+
+For each frame if not segemnted or for each sgement if segmentation is used height iterations of
+
+Y Line of width samples
+
+followed by
+
+U Line of width samples (444) or width x height/2 samples  (422)
+
+followed by
+
+V Line of width samples (444) or width x height/2 samples  (422)
+
+optionally followd by Alpha line
+
+Alpha Line of width samples
+
+This allows the concatenation of segments into a planar buffer that can be used as a siongle plane or a segemnts as required by the
+implementation without any data shuffling beng needed.
+
+In many common libraries this can be represent by setting the stride of all components to be the sum of the payload for each component.
+
+plane or segment 1
+
+YYYYYY.......YYYYYYYYUUUU........UUUUVVVV........VVVV
+.....................................................
+YYYYYY.......YYYYYYYYUUUU........UUUUVVVV........VVVV
+
+If segmented then repeat segments till Segment 8, only planar or 8 segments supported
+
+vnd.planar has been assigned from iana as a name, the email address GCCG@groups.vsf.tv has been used in request.
+
+known formats in existing libraies, needs extending
+GStreamer GST_VIDEO_FORMAT_Y444_16LE,
+ffmpeg yuva422p16le yuv and alpha 16 bit 422
+ffmpeg yuv422p16le yuv 16 bit 422
+ffmpeg yuv422p yuv 8 bit 422
+ffmpeg yuva422p yuv and alpha 8 bit 422
+ffmpeg gbrap16le  rgb (gbr)and alpha 16 bit
+ffmpeg gbrp rgb (gbr) 8 bit
+
 
 # Compressed Video Data Formats
 
@@ -86,11 +145,11 @@ An example for H.264 compressed video is shown below:
 
 # Uncompressed Audio Format
 
-32-bit PCM (uncompressed) audio data is stored in the following format:
+32-bit float (uncompressed) audio data is stored in the following format:
 ```
-             +-----------------------+------------+------------+------------------------+
- 1 sample:   | most significant byte |   byte 2   |   byte 1   | least significant byte |
-             +-----------------------+------------+------------+------------------------+
+             +----------------+
+ 1 sample:   | IEEE 754 float |
+             +----------------+
 ```
 
 Audio samples with multiple channels are interleaved. An example using multiple channels is shown below:
