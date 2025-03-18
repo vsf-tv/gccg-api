@@ -73,7 +73,7 @@
           "minimum": 1,
           "maximum": 1000
         },
-        "denom": {
+        "den": {
           "type": "integer",
           "minimum": 1,
           "maximum": 1000
@@ -81,7 +81,7 @@
       },
       "required": [
         "num",
-        "denom"
+        "den"
       ]
     },
   "timestamp": {
