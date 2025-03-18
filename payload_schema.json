@@ -14,9 +14,23 @@
       "type": "object",
       "$ref": "#/$defs/timing"
     },
+    "timestamp": {
+      "type": "object",
+      "$ref": "#/$defs/timestamp"
+    },
+    "aspect_ratio": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "frame_rate": {
+      "$ref": "#/$defs/frame_rate"
+    },
     "transportParameters" : {
       "type": "object",
-      "description": "Transport specific parameters"
+      "description": "Transport specific parameters",
+      "uri": {
+        "description": "URI to locate resource",
+        "type": "string"
+      }
     },
     "mediaFlow": {
       "type": "object",
@@ -32,328 +46,351 @@
   },
   "required": [ "gccgVersion", "timing", "mediaFlow" ],
   "$defs": {
-    "timing": {
+    "aspect_ratio": {
       "type": "object",
       "properties": {
-        "COT": {
-          "description": "64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds",
-          "type": "#/$defs/timestamp"
-        },
-        "LAT": {
-          "description": "64-bit Local Arrival Timestamp in same format as COT.",
-          "type": "#/$defs/timestamp"
-        },
-        "tMinAccumulated": {
-          "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
-          "type": "integer"
-        },
-        "t99Accumulated": {
-          "description": "Accumulated maximum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
-          "type": "integer"
-        }
-      }
-    },
-    "mediaElement": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "description": "Media type (video, audio or ancillary-data).",
-          "type": "string",
-          "enum": [
-            "video",
-            "audio",
-            "ancillary-data"
-          ]
-        },
-        "transportParameters" : {
-          "type": "object",
-          "description": "Transport specific parameters"
-        },
-        "encodingName": {
-          "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
-          "type": "string",
-          "enum": [
-            "pcm",
-            "planar",
-            "smpte291"
-          ]
-        },
-        "clockRate": {
-          "description": "Clock rate of the media. 90k for video and 48k for audio.",
-          "x-omitempty": true,
+        "x": {
           "type": "integer",
-          "enum": [
-            90000,
-            48000
-          ]
+          "minimum": 0,
+          "maximum": 1000
         },
-        "traceId": {
-          "description": "To aid in tracing and observability",
-          "x-omitempty": true,
-          "type": "string"
-        },
-        "videoAttributes": {
-          "x-omitempty": true,
-          "$ref": "#/$defs/videoAttributes"
-        },
-        "audioAttributes": {
-          "x-omitempty": true,
-          "$ref": "#/$defs/audioAttributes"
-        },
-        "ancillaryDataAttributes": {
-          "x-omitempty": true,
-          "$ref": "#/$defs/ancillaryDataAttributes"
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
         }
       },
-      "required": [ "type" ]
+      "required": [
+        "x",
+        "y"
+      ]
     },
-    "videoAttributes": {
+    "frame_rate": {
       "type": "object",
       "properties": {
-        "sampling": {
-          "description": "Video color sampling type.",
-          "type": "string",
-          "enum": [
-            "YCbCr-4:2:2",
-            "YCbCrA-4:2:2:4",
-            "YCbCr-4:4:4",
-            "YCbCrA-4:4:4:4",
-            "RGB"
-          ]
-        },
-        "depth": {
-          "description": "Video pixel bit depth.",
-          "type": "integer",
-          "enum": [
-            8,
-            16
-          ]
-        },
-        "width": {
-          "description": "Video picture width in pixels.",
+        "num": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 7680
+          "maximum": 1000
         },
-        "height": {
-          "description": "Video picture height in pixels.",
+        "den": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 4320
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "num",
+        "den"
+      ]
+    },
+  "timestamp": {
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nano_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999999999
+          }
         },
-        "exactframerate": {
-          "description": "Video frame-rate numerator/denominator.",
-          "type": "#/$defs/rational"
-        },
-        "colorimetry": {
-          "description": "Video colorimetry.",
-          "type": "string",
-          "enum": [
-            "BT601",
-            "BT709",
-            "BT2020",
-            "BT2100",
-            "ST2065-1",
-            "ST2065-3",
-            "XYZ"
-          ]
-        },
-        "interlace": {
-          "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean"
-        },
-        "segmented": {
-          "description": "If true video is segmented.",
-          "type": "boolean"
-        },
-        "TCS": {
-          "description": "SMPTE 2110-20 Media type parameters for Transfer Characteristic System.",
-          "type": "string",
-          "enum": [
-            "SDR",
-            "PQ",
-            "HLG",
-            "LINEAR",
-            "BT2100LINPQ",
-            "BT2100LINHLG",
-            "ST2065-1",
-            "ST428-1",
-            "DENSITY"
-          ]
-        },
-        "RANGE": {
-          "description": "SMPTE 2110-20 Media type parameter for setting encoding range.",
-          "type": "string",
+        "required": [
+          "seconds",
+          "nano_seconds"
+        ]
+      },
+      "timing": {
+        "type": "object",
+        "properties": {
+          "COT": {
+            "description": "64-bit Content Origination Timestamp. Upper 32-bits is the number of seconds since the SMPTE Epoch. Lower 32-bits is the number of fractional seconds as measured in nanoseconds",
+            "$ref": "#/$defs/timestamp"
+          },
+          "LAT": {
+            "description": "64-bit Local Arrival Timestamp in same format as COT.",
+            "$ref": "#/$defs/timestamp"
+          },
+          "tMinAccumulated": {
+            "description": "Accumulated minimum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
+            "type": "integer"
+          },
+          "t99Accumulated": {
+            "description": "Accumulated maximum latency of the Workflow path up to this Workflow Step, in milliseconds. Can change but the change is disruptive to the Workflow timing while the Workflow adapts.",
+            "type": "integer"
+          },
+          "monotonic": {
+            "description": "Set to true indicates that the timestamps are increasing, when false payload buffers can arrive out of time order",
+            "type": "boolean"
+          }
+        }
+      },
+      "mediaElement": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "Media type (video, audio or ancillary-data).",
+            "type": "string",
             "enum": [
-            "NARROW",
-            "FULL",
-            "FULLPROTECT"
-          ]
+              "video",
+              "audio",
+              "ancillary-data"
+            ]
+          },
+          "encodingName": {
+            "description": "Encoding options are from the IANA registered media types. See https://www.iana.org/assignments/media-types/media-types.xhtml",
+            "type": "string"
+          },
+          "planarMode": {
+            "description": "which planar mode is used, default is full frame where all Y is followed by All U etc, only if not segmented, or line where Y for lines is followed by U for line etc, required for segmented mode",
+            "type": "string",
+            "enum": [
+              "full",
+              "line"
+            ]
+          },
+          "clockRate": {
+            "description": "Clock rate of the media. 90k for video and 48k for audio.",
+            "x-omitempty": true,
+            "type": "integer",
+            "enum": [
+              90000,
+              48000
+            ]
+          },
+          "traceId": {
+            "description": "Clock rate of the media. 90k for video and 48k for audio.",
+            "x-omitempty": true,
+            "type": "string"
+          },
+          "videoAttributes": {
+            "x-omitempty": true,
+            "$ref": "#/$defs/videoAttributes"
+          },
+          "audioAttributes": {
+            "x-omitempty": true,
+            "$ref": "#/$defs/audioAttributes"
+          },
+          "ancillaryDataAttributes": {
+            "x-omitempty": true,
+            "$ref": "#/$defs/ancillaryDataAttributes"
+          }
         },
-        "PAR": {
-          "description": "Pixel Aspect Ratio (PAR) width:height.",
-          "type": "#/$defs/rational"
-        },
-        "alphaIncluded": {
-          "description": "If true alpha channel is included.",
-          "type": "boolean"
-        },
-        "partialFrame": {
-          "description": "Partial frame video size and offset.",
-          "type": "object",
-          "properties": {
-            "width": {
-              "description": "Partial frame video width in pixels.",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 7680
-            },
-            "height": {
-              "description": "Partial frame video height in pixels.",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 4320
-            },
-            "horizontalOffset": {
-              "description": "Partial frame video horizontal offset in pixels.",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 7680
-            },
-            "verticalOffset": {
-              "description": "Partial frame video vertical offset in pixels.",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 4320
+        "required": [ "type" ]
+      },
+      "videoAttributes": {
+        "type": "object",
+        "properties": {
+          "sampling": {
+            "description": "Video color sampling type.",
+            "type": "string",
+            "enum": [
+              "YCbCr-4:2:2",
+              "YCbCrA-4:2:2:4",
+              "YCbCr-4:4:4",
+              "RGB"
+            ]
+          },
+          "depth": {
+            "description": "Video pixel bit depth.",
+            "type": "integer",
+            "enum": [
+              8,
+              16
+            ]
+          },
+          "width": {
+            "description": "Video picture width in pixels.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7680
+          },
+          "height": {
+            "description": "Video picture height in pixels.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4320
+          },
+          "exactframerate": {
+            "description": "Video frame-rate numerator/denominator.",
+            "$ref": "#/$defs/frame_rate"
+          },
+          "colorimetry": {
+            "description": "Video colorimetry.",
+            "type": "string",
+            "enum": [
+              "BT601",
+              "BT709",
+              "BT2020",
+              "BT2100",
+              "ST2065-1",
+              "ST2065-3",
+              "XYZ"
+            ]
+          },
+          "interlace": {
+            "description": "If true video is interlaced, otherwise video is progressive.",
+            "type": "boolean"
+          },
+          "segmented": {
+            "description": "If true video is segmented.",
+            "type": "boolean"
+          },
+          "TCS": {
+            "description": "SMPTE 2110-20 Media type parameters for Transfer Characteristic System.",
+            "type": "string",
+            "enum": [
+              "SDR",
+              "PQ",
+              "HLG",
+              "LINEAR",
+              "BT2100LINPQ",
+              "BT2100LINHLG",
+              "ST2065-1",
+              "ST428-1",
+              "DENSITY"
+            ]
+          },
+          "RANGE": {
+            "description": "SMPTE 2110-20 Media type parameter for setting encoding range.",
+            "type": "string",
+              "enum": [
+              "NARROW",
+              "FULL",
+              "FULLPROTECT"
+            ]
+          },
+          "PAR": {
+            "description": "Pixel Aspect Ratio (PAR) width:height.",
+            "$ref": "#/$defs/aspect_ratio"
+          },
+          "alphaIncluded": {
+            "description": "If true alpha channel is included.",
+            "type": "boolean"
+          },
+          "partialFrame": {
+            "description": "Partial frame video size and offset.",
+            "type": "object",
+            "properties": {
+              "width": {
+                "description": "Partial frame video width in pixels.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7680
+              },
+              "height": {
+                "description": "Partial frame video height in pixels.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4320
+              },
+              "horizontalOffset": {
+                "description": "Partial frame video horizontal offset in pixels.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7680
+              },
+              "verticalOffset": {
+                "description": "Partial frame video vertical offset in pixels.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4320
+              }
             }
           }
         }
-      }
-    },
-    "audioAttributes": {
-      "type": "object",
-      "properties": {
-        "activeChannels": {
-          "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 256
-        },
-        "channelOrder": {
-          "description": "SMPTE 2110-30 Uncompressed audio channel groupings.",
-          "type": "string",
-          "enum": [
-            "SMPTE2110.(M)",
-            "SMPTE2110.(DM)",
-            "SMPTE2110.(ST)",
-            "SMPTE2110.(LtRt)",
-            "SMPTE2110.(51)",
-            "SMPTE2110.(71)",
-            "SMPTE2110.(222)",
-            "SMPTE2110.(SGRP)"
-          ]
-        },
-        "language": {
-          "description": "Two or three letter audio language code.",
-          "type": "string"
-        },
-        "depth": {
-          "description": "Bit depth of the audio samples.",
-          "type": "integer",
-          "enum": [
-            32
-          ]
-        },
-        "originalDepth": {
-          "description": "Original bit depth of the audio samples.",
-          "type": "integer",
-          "minimum": 0
-        },
-        "sampleCount": {
-          "description": "Number of audio samples included in each audio channel.",
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    },
-    "timestamp": {
-      "type": "object",
-      "properties": {
-        "seconds": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "nano_seconds": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 999999999
+      },
+      "audioAttributes": {
+        "type": "object",
+        "properties": {
+          "activeChannels": {
+            "description": "Total number of active audio channels. Can vary, but cannot exceed totalChannels.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          },
+          "channelOrder": {
+            "description": "SMPTE 2110-30 Uncompressed audio channel groupings.",
+            "type": "string",
+            "enum": [
+              "SMPTE2110.(M)",
+              "SMPTE2110.(DM)",
+              "SMPTE2110.(ST)",
+              "SMPTE2110.(LtRt)",
+              "SMPTE2110.(51)",
+              "SMPTE2110.(71)",
+              "SMPTE2110.(222)",
+              "SMPTE2110.(SGRP)"
+            ]
+          },
+          "language": {
+            "description": "Two or three letter audio language code.",
+            "type": "string"
+          },
+          "depth": {
+            "description": "Bit depth of the audio samples.",
+            "type": "integer",
+            "enum": [
+              32
+            ]
+          },
+          "originalDepth": {
+            "description": "Original bit depth of the audio samples.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "sampleCount": {
+            "description": "Number of audio samples included in each audio channel.",
+            "type": "integer",
+            "minimum": 0
+          }
         }
       },
-      "required": [
-        "seconds",
-        "nano_seconds"
-      ]
-    },
-    "rational": {
-      "type": "object",
-      "properties": {
-        "numerator": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "denominator": {
-          "type": "integer",
-          "minimum": 1
-        }
-      },
-      "required": [
-        "numerator",
-        "denominator"
-      ]
-    },
-    "ancillaryDataAttributes": {
-      "type": "object",
-      "properties": {
-        "encodingName": {
-          "description": "The only ancillary-data option is rfc8331.",
-          "type": "string",
-          "const": "rfc8331",
-        "packetCount": {
-          "description": "Number of ANC packets being transported. If there is no ANC data to be transmitted in a given period, the header shall still be sent in a timely manner indicating a count of zero.",
-          "type": "integer"
-        },
-        "interlace": {
-          "description": "If true video is interlaced, otherwise video is progressive.",
-          "type": "boolean"
-        },
-        "field": {
-          "description": "Zero or one. For interlaced, zero= first field, one= second field. For progressive, shall be set to zero, except in the case of progressive segmented frame data where it indicates the segment.",
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "lumaChannel": {
-          "description": "Whether the ANC data corresponds to the luma (Y) channel or not.",
-          "type": "boolean"
-        },
-        "lineNumber": {
-          "description": "Optional. The interface line number of the ANC data (in cases where legacy location is not required, users are encouraged to use the location-free indicators specified in RFC8331).",
-          "type": "integer"
-        },
-        "DID": {
-          "description": "Optional. Data Identifier Word that indicates the type of ancillary data that the packet corresponds to.",
-          "type": "integer"
-        },
-        "SDID": {
-          "description": "Optional. Secondary Data Identifier (8-bit value). Valid if DID is less than 128.",
-          "type": "integer"
-        },
-        "dataWordCount": {
-          "description": "Number of data words for each ANC packet. Note: The horizontal offset and stream number, which are present in the RFC, are not used here.",
-          "type": "integer"
+      "ancillaryDataAttributes": {
+        "type": "object",
+        "properties": {
+          "encodingName": {
+            "description": "The only ancillary-data option is rfc8331.",
+            "type": "string",
+            "const": "rfc8331",
+          "packetCount": {
+            "description": "Number of ANC packets being transported. If there is no ANC data to be transmitted in a given period, the header shall still be sent in a timely manner indicating a count of zero.",
+            "type": "integer"
+          },
+          "interlace": {
+            "description": "If true video is interlaced, otherwise video is progressive.",
+            "type": "boolean"
+          },
+          "field": {
+            "description": "Zero or one. For interlaced, zero= first field, one= second field. For progressive, shall be set to zero, except in the case of progressive segmented frame data where it indicates the segment.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "lumaChannel": {
+            "description": "Whether the ANC data corresponds to the luma (Y) channel or not.",
+            "type": "boolean"
+          },
+          "lineNumber": {
+            "description": "Optional. The interface line number of the ANC data (in cases where legacy location is not required, users are encouraged to use the location-free indicators specified in RFC8331).",
+            "type": "integer"
+          },
+          "DID": {
+            "description": "Optional. Data Identifier Word that indicates the type of ancillary data that the packet corresponds to.",
+            "type": "integer"
+          },
+          "SDID": {
+            "description": "Optional. Secondary Data Identifier (8-bit value). Valid if DID is less than 128.",
+            "type": "integer"
+          },
+          "dataWordCount": {
+            "description": "Number of data words for each ANC packet. Note: The horizontal offset and stream number, which are present in the RFC, are not used here.",
+            "type": "integer"
+          }
         }
       }
     }
   }
-}
 }

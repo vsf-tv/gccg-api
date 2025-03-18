@@ -135,8 +135,6 @@ ffmpeg gbrp rgb (gbr) 8 bit
 
 # Compressed Video Data Formats
 
-TODO need to decide whats happening here if anything
-
 They shall be indentified by using the Internet Assigned Numbers Authority (IANA) video name strings, which can be found at https://www.iana.org/assignments/media-types/media-types.xhtml#video, for the JSON configuration "encodingName" element.
 
 An example for H.264 compressed video is shown below:
@@ -189,3 +187,10 @@ The section below is repeated once for each ancillary data packet, as specified 
                                   |   Checksum_Word   |word_align |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
+
+# Transmission Order
+Payload buffers will be transmitted in the order in which the GccgTxPayload() function is called and then delivered to the recieve callback in the same order
+
+The API is not responsible for re-ordering of payload buffers using timestamps, this is the responsibility of the user of the API to trasnmit in the correct order or re-order on reciept.
+
+
